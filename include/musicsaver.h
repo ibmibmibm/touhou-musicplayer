@@ -31,7 +31,7 @@ class MusicSaver
         virtual ~MusicSaver() {}
         QString errorString() const { return _errorString; }
     protected:
-        MusicSaver() {}
+        MusicSaver();
         void setErrorString(QString newErrorString) { _errorString = newErrorString; }
     private:
         QString _errorString;

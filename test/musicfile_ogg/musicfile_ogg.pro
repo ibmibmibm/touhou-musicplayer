@@ -12,17 +12,29 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
-TEMPLATE      = subdirs
-CONFIG       += debug_and_release
-SUBDIRS       = th06loader \
-                th07loader \
-                th075loader \
-                th08loader \
-                th09loader \
-                th095loader \
-                th10loader \
-                th105loader \
-                alcoloader \
-                th11loader \
-                th12trloader
+
+QT          += testlib
+TEMPLATE     = app
+TARGET       =
+INCLUDEPATH += ../../include
+HEADERS     += ../../include/musicfile.h \
+               ../../include/musicfile_ogg.h
+SOURCES     += testmusicfile_ogg.cpp \
+               ../../src/musicfile.cpp \
+               ../../src/musicfile_ogg.cpp
+
+win32 {
+    LIBS        += -LC:\portaudio\lib -lportaudio_x86 -LC:\libogg\lib -logg -lvorbis -lvorbisfile
+    INCLUDEPATH += C:\portaudio\include C:\libogg\include
+    CONFIG(debug, debug|release) {
+        CONFIG += console
+    }
+}
+
+unix {
+    #QMAKE_CXXFLAGS += -pg
+    #QMAKE_LFLAGS += -pg
+    CONFIG    += link_pkgconfig
+    PKGCONFIG += portaudio-2.0 vorbisfile
+}
 

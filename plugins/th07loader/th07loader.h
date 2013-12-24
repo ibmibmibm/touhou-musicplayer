@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TH06LOADER_H
-#define TH06LOADER_H
+#ifndef TH07LOADER_H
+#define TH07LOADER_H
 #include <QObject>
 #include <QString>
 #include <QHash>
@@ -47,8 +47,8 @@ class Th07Loader : public QObject, public LoaderInterface
         MusicData at(uint index);
         uint size() const;
     private:
-        QHash<QString, FileInfo> info_hash;
-        QDir dir;
+        QHash<QString, FileInfo> infoHash;
+        QDir programDirectory;
 };
 
-#endif //TH06LOADER_H
+#endif //TH07LOADER_H

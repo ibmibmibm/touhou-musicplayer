@@ -12,17 +12,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
-TEMPLATE      = subdirs
+TEMPLATE      = lib
+CONFIG       += plugin
 CONFIG       += debug_and_release
-SUBDIRS       = th06loader \
-                th07loader \
-                th075loader \
-                th08loader \
-                th09loader \
-                th095loader \
-                th10loader \
-                th105loader \
-                alcoloader \
-                th11loader \
-                th12trloader
+INCLUDEPATH  += ../../include
+DESTDIR       = ..
 
+HEADERS      += ../../include/loaderinterface.h \
+                ../../include/helperfuncs.h \
+                ../../include/musicdata.h \
+                th12trloader.h
+SOURCES      += th12trloader.cpp

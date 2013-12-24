@@ -18,10 +18,15 @@
 #define TH06LOADER_H
 #include <QObject>
 #include <QString>
-#include <QHash>
+#include <QList>
 #include <QDir>
-#include <QByteArray>
 #include "loaderinterface.h"
+
+struct MusicInfo
+{
+    quint32 loopBegin;
+    quint32 loopEnd;
+};
 
 class Th06Loader : public QObject, public LoaderInterface
 {
@@ -29,15 +34,15 @@ class Th06Loader : public QObject, public LoaderInterface
     Q_INTERFACES(LoaderInterface)
 
     public:
-        Th06Loader() {}
+        Th06Loader();
         const QString& title() const;
         bool open(const QString &);
         void close();
         MusicData at(uint index);
         uint size() const;
     private:
-        QHash<QString, QByteArray> data;
-        QDir dir;
+        QList<MusicInfo> musicInfoList;
+        QDir programDirectory;
 };
 
 #endif //TH06LOADER_H

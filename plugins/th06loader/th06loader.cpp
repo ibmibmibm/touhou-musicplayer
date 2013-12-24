@@ -16,7 +16,8 @@
  */
 #include <QDir>
 #include <QFile>
-#include <QList>
+#include <QHash>
+#include <QByteArray>
 
 #include "th06loader.h"
 #include "helperfuncs.h"
@@ -56,6 +57,118 @@ namespace {
         int checksum;
         QString name;
     };
+
+    bool checkAllFileExists(const QDir& programDirectory)
+    {
+        if (!programDirectory.exists(FileName))
+            return false;
+
+        for (uint i = 0; i < SongDataSize; ++i)
+            if (!programDirectory.exists(WavName.arg(i + 1, 2, 10, QLatin1Char('0'))))
+                return false;
+
+        return true;
+    }
+}
+
+namespace PBG3
+{
+    bool checkMagicNumber(QFile& file)
+    {
+        quint32 magicNumber;
+        if (file.read(reinterpret_cast<char*>(&magicNumber), 4) != 4)
+            return false;
+        if (qFromLittleEndian(magicNumber) != 0x33474250) //PBG3
+            return false;
+        return true;
+    }
+
+    bool getHeaderDescription(QFile& file, uint& maxFileCount, uint& headerPos, uint& headerSize)
+    {
+        QByteArray buffer = file.read(9);
+        if (buffer.size() != 9)
+            return false;
+        BitReader reader(buffer);
+        maxFileCount = reader.getUInt32();
+        headerPos = reader.getUInt32();
+        if (file.size() <= headerPos)
+            return false;
+        headerSize = file.size() - headerPos;
+        return true;
+    }
+
+    bool getFileDescription(QFile& file, const uint maxFileCount, const uint headerPos, const uint headerSize, QList<FileInfo>& infoList)
+    {
+        file.seek(headerPos);
+        QByteArray header = file.read(headerSize);
+        BitReader reader(header);
+        for (uint i = 0; i < maxFileCount; ++i)
+        {
+            FileInfo info;
+            reader.getUInt32(); //time
+            reader.getUInt32(); //time
+            info.checksum = reader.getUInt32();
+            info.offset = reader.getUInt32();
+            info.size = reader.getUInt32();
+            char c;
+            while ( (c = reader.getChar()) )
+                info.name += c;
+            infoList << info;
+        }
+        // dummy info
+        FileInfo info;
+        info.offset = headerPos;
+        infoList << info;
+        return true;
+    }
+
+    bool parser(const QString& filename, QList<MusicInfo>& musicInfoList)
+    {
+        QFile file(filename);
+        if (!file.open(QFile::ReadOnly))
+            return false;
+        if (!checkMagicNumber(file))
+            return false;
+
+        uint maxFileCount;
+        uint headerPos;
+        uint headerSize;
+        if (!getHeaderDescription(file, maxFileCount, headerPos, headerSize))
+            return false;
+
+        QList<FileInfo> infoList;
+        if (!getFileDescription(file, maxFileCount, headerPos, headerSize, infoList))
+            return false;
+
+        QHash<QString, QByteArray> fileDataHash;
+        for (int i = 0; i < infoList.size() - 1; ++i)
+        {
+            const FileInfo& info = infoList.at(i);
+            if (!info.name.endsWith(".pos"))
+                continue;
+            file.seek(info.offset);
+            uint compressedSize = infoList.at(i + 1).offset - info.offset;
+            int checksum;
+            QByteArray fileData = lzDecompressChecksum(checksum, file.read(compressedSize), info.size);
+            Q_ASSERT(fileData.size() == info.size);
+            Q_ASSERT(checksum == info.checksum);
+            fileDataHash.insert(info.name, fileData);
+        }
+
+        for (uint i = 0; i < SongDataSize; ++i)
+        {
+            QString posName = PosName.arg(i + 1, 2, 10, QLatin1Char('0'));
+            Q_ASSERT(fileDataHash.contains(posName));
+            const uchar *d = reinterpret_cast<const uchar*>(fileDataHash.value(posName).data());
+            MusicInfo musicInfo = {qFromLittleEndian<qint32>(d), qFromLittleEndian<qint32>(d + 4)};
+            musicInfoList.append(musicInfo);
+        }
+        return true;
+    }
+}
+
+Th06Loader::Th06Loader()
+{
 }
 
 const QString& Th06Loader::title() const
@@ -70,109 +183,37 @@ uint Th06Loader::size() const
 
 bool Th06Loader::open(const QString &path)
 {
-    dir = QDir(path);
-    if (!dir.exists(FileName))
+    programDirectory = QDir(path);
+    if (!checkAllFileExists(programDirectory))
         return false;
 
-// PBG3 decompresser
-    QFile file(dir.filePath(FileName));
-    if (!file.open(QIODevice::ReadOnly))
+    if (!PBG3::parser(programDirectory.filePath(FileName), musicInfoList))
         return false;
-
-    uint max_file_count;
-    uint header_pos;
-    uint header_size;
-    {
-        quint32 magicNumber;
-        if (file.read(reinterpret_cast<char*>(&magicNumber), 4) != 4)
-            return false;
-        if (qFromLittleEndian(magicNumber) != 0x33474250) //PBG3
-            return false;
-// Stage 1
-        QByteArray buffer = file.read(9);
-        if (buffer.size() != 9)
-            return false;
-        BitReader reader(buffer);
-        max_file_count = reader.getUInt32();
-        header_pos = reader.getUInt32();
-        if (file.size() <= header_pos)
-            return false;
-        header_size = file.size() - header_pos;
-    }
-
-    QList<FileInfo> info_list;
-    {
-// Stage 2
-        file.seek(header_pos);
-        QByteArray header = file.read(header_size);
-        BitReader reader(header);
-        for (uint i = 0; i < max_file_count; ++i)
-        {
-            FileInfo info;
-            reader.getUInt32(); //time
-            reader.getUInt32(); //time
-            info.checksum = reader.getUInt32();
-            info.offset = reader.getUInt32();
-            info.size = reader.getUInt32();
-            char c;
-            while ( (c = reader.getChar()) )
-                info.name += c;
-            info_list << info;
-        }
-        // dummy info
-        FileInfo info;
-        info.offset = header_pos;
-        info_list << info;
-        for (int i = 0; i < info_list.size() - 1; ++i)
-        {
-            FileInfo info = info_list.at(i);
-            if (!info.name.endsWith(".pos"))
-                continue;
-            file.seek(info.offset);
-            uint csize = info_list.at(i + 1).offset - info.offset;
-            int checksum;
-            QByteArray ddata = lzDecompressChechsum(checksum, file.read(csize), info.size);
-            Q_ASSERT(ddata.size() == info.size);
-            Q_ASSERT(checksum == info.checksum);
-            data.insert(info.name, ddata);
-        }
-    }
-
-    for (uint i = 0; i < SongDataSize; ++i)
-    {
-        if (!dir.exists(WavName.arg(i + 1, 2, 10, QLatin1Char('0'))))
-        {
-            data.clear();
-            return false;
-        }
-    }
     return true;
 }
 
 MusicData Th06Loader::at(uint index)
 {
     Q_ASSERT(index < SongDataSize);
-    QString pos = PosName.arg(index + 1, 2, 10, QLatin1Char('0'));
-    Q_ASSERT(data.contains(pos));
-    const uchar *d = reinterpret_cast<const uchar*>(data.value(pos).data());
-    qint32 loopBegin = qFromLittleEndian<qint32>(d);
-    qint32 loopEnd = qFromLittleEndian<qint32>(d + 4);
-
-    QFile file(dir.absoluteFilePath(WavName.arg(index + 1, 2, 10, QLatin1Char('0'))));
+    const MusicInfo& musicInfo = musicInfoList.at(index);
+    QFile file(programDirectory.absoluteFilePath(WavName.arg(index + 1, 2, 10, QLatin1Char('0'))));
 
     return MusicData(
         file.fileName(),
         SongData[index],
+        "ZUN",
         Title,
+        index + 1,
+        SongDataSize,
         ".wav",
         file.size(),
         true,
-        loopBegin,
-        loopEnd
+        musicInfo.loopBegin,
+        musicInfo.loopEnd
     );
 }
 
 void Th06Loader::close()
 {
-    data.clear();
+    musicInfoList.clear();
 }

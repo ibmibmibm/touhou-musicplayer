@@ -237,7 +237,10 @@ MusicData Th08Loader::at(uint index)
     return MusicData(
         info.name,
         SongData[index][1],
+        "ZUN",
         Title,
+        index + 1,
+        SongDataSize,
         ".wav",
         info.size,
         true,

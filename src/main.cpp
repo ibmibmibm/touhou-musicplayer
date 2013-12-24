@@ -25,8 +25,9 @@
 #include "musicfile_ogg.h"
 #include "musicfile_wav.h"
 #include "musicsaver_wav.h"
+#include "musicsaver_flac.h"
 
-const uint VERSION = 0x00050000;
+const uint VERSION = 0x00060000;
 
 void updateSettings()
 {
@@ -67,6 +68,8 @@ void updateSettings()
             prevVersion = 0x00040000;
         case 0x00040000:
             prevVersion = 0x00050000;
+        case 0x00050000:
+            prevVersion = 0x00060000;
             break;
         default:
             qWarning("Unknow version.");
@@ -80,6 +83,7 @@ void initialFactories()
     MusicFileFactory::registerMusicFile(".ogg", MusicFile_Ogg::createFunction);
     MusicFileFactory::registerMusicFile(".wav", MusicFile_Wav::createFunction);
     MusicSaverFactory::registerMusicSaver(MusicSaver_Wav::filterString(), MusicSaver_Wav::createFunction);
+    MusicSaverFactory::registerMusicSaver(MusicSaver_Flac::filterString(), MusicSaver_Flac::createFunction);
 }
 
 int main(int argv, char **args)

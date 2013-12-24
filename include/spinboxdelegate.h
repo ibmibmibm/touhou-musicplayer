@@ -14,28 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "musicsaver.h"
+#include <QItemDelegate>
 
-MusicSaver::MusicSaver()
+class SpinBoxDelegate : public QItemDelegate
 {
-}
+    Q_OBJECT
 
-QHash<QString, MusicSaverFactory::CreateFunction> MusicSaverFactory::functionHash;
+    public:
+        SpinBoxDelegate(QObject *parent = 0);
+        ~SpinBoxDelegate();
 
-int MusicSaverFactory::registerMusicSaver(const QString& filterString, CreateFunction createFunction)
-{
-    functionHash.insert(filterString, createFunction);
-    return functionHash.size();
-}
+        QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const;
 
-MusicSaver* MusicSaverFactory::createMusicSaver(const QString& filterString)
-{
-    Q_ASSERT(functionHash.contains(filterString));
-    return functionHash.value(filterString)();
-}
+        void setEditorData(QWidget *editor, const QModelIndex &index) const;
+        void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const;
 
-QStringList MusicSaverFactory::filterStringList()
-{
-    QStringList filterList(functionHash.keys());
-    return filterList;
-}
+        void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const;
+};

@@ -22,14 +22,13 @@
 
 struct ArchiveMusicData : public QSharedData
 {
-    typedef char (*Encoder)(void *, char);
-    typedef char (*Decoder)(void *, char);
+    typedef char (*Filter)(void *, char);
     ArchiveMusicData(
         const QString& archiveFileName_,
         qint64 dataBegin_,
         qint64 dataEnd_,
-        Decoder encoder_ = NULL,
-        Decoder decoder_ = NULL,
+        Filter encoder_ = NULL,
+        Filter decoder_ = NULL,
         void* userData_ = NULL
     ) :
         archiveFileName(archiveFileName_),
@@ -44,28 +43,39 @@ struct ArchiveMusicData : public QSharedData
     QString archiveFileName;
     qint64 dataBegin;
     qint64 dataEnd;
-    Encoder encoder;
-    Decoder decoder;
+    Filter encoder;
+    Filter decoder;
     void* userData;
 };
 
 class MusicData
 {
     public:
+        MusicData() :
+            _null(true)
+        {
+        }
         MusicData(
             const QString& fileName,
             const QString& title,
+            const QString& artist,
             const QString& album,
+            uint trackNumber,
+            uint totalTrackNumber,
             const QString& suffix,
             qint64 size,
             bool loop,
-            qint64 loopBegin = 0,
-            qint64 loopEnd = 0,
+            qint64 loopBegin,
+            qint64 loopEnd,
             const ArchiveMusicData* archiveMusicData = NULL
         ) :
+            _null(false),
             _fileName(fileName),
             _title(title),
+            _artist(artist),
             _album(album),
+            _trackNumber(trackNumber),
+            _totalTrackNumber(totalTrackNumber),
             _suffix(suffix),
             _size(size),
             _loop(loop),
@@ -80,10 +90,14 @@ class MusicData
             }
         }
 
+        bool isNull() const { return _null; }
         const QString& fileName() const { return _fileName; }
         void setFileName(const QString& newFileName) { _fileName = newFileName; }
         const QString& title() const { return _title; }
+        const QString& artist() const { return _artist; }
         const QString& album() const { return _album; }
+        const uint& trackNumber() const { return _trackNumber; }
+        const uint& totalTrackNumber() const { return _totalTrackNumber; }
         const QString& suffix() const { return _suffix; }
         qint64 size() const { return _size; }
         bool loop() const { return _loop; }
@@ -92,9 +106,13 @@ class MusicData
         const QExplicitlySharedDataPointer<ArchiveMusicData>& archiveMusicData() const { return _archiveMusicData; }
         friend bool operator==(const MusicData& left, const MusicData& right);
     private:
+        bool _null;
         QString _fileName;
         QString _title;
+        QString _artist;
         QString _album;
+        uint _trackNumber;
+        uint _totalTrackNumber;
         QString _suffix;
         qint64 _size;
         bool _loop;

@@ -140,7 +140,7 @@ QByteArray lzDecompress(const QByteArray& compressed, int decompressdSize = 0)
     }
 }
 
-QByteArray lzDecompressChechsum(int& checksum, const QByteArray& compressed, int decompressdSize)
+QByteArray lzDecompressChecksum(int& checksum, const QByteArray& compressed, int decompressdSize)
 {
     QByteArray decompressd;
     decompressd.reserve(decompressdSize);

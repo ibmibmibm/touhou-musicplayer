@@ -25,38 +25,38 @@ Q_EXPORT_PLUGIN2("Th105Loader", Th105Loader)
 
 namespace {
     const QString Title = QString::fromWCharArray(L"\u6771\u65b9\u7dcb\u60f3\u5929\u3000\u301c Scarlet Weather Rhapsody");
-    const QString SongData[][2] = {
-        {"data/bgm/op", QString::fromWCharArray(L"\u7dcb\u60f3\u5929")},
-        {"data/bgm/sr", QString::fromWCharArray(L"\u6771\u65b9\u7dcb\u60f3\u5929")},
-        {"data/bgm/ta00", QString::fromWCharArray(L"\u65e5\u5e38\u5750\u81e5")},
-        {"data/bgm/ta01", QString::fromWCharArray(L"\u7532\u8ad6\u4e59\u99c1")},
-        {"data/bgm/ta02", QString::fromWCharArray(L"\u96f2\u5916\u84bc\u5929")},
-        {"data/bgm/ta03", QString::fromWCharArray(L"\u98a8\u5149\u660e\u5a9a")},
-        {"data/bgm/ta04", QString::fromWCharArray(L"\u51b7\u541f\u9591\u9154")},
-        {"data/bgm/ta05", QString::fromWCharArray(L"\u4ee5\u9b5a\u99c6\u8805")},
-        {"data/bgm/ta06", QString::fromWCharArray(L"\u66ae\u8272\u84bc\u7136")},
-        {"data/bgm/ta07", QString::fromWCharArray(L"\u5929\u8863\u7121\u7e2b")},
-        {"data/bgm/ta08", QString::fromWCharArray(L"\u653e\u7e26\u4e0d\u7f88")},
-        {"data/bgm/st00", QString::fromWCharArray(L"\u5730\u306e\u8272\u306f\u9ec4\u8272")},
-        {"data/bgm/st01", QString::fromWCharArray(L"\u9999\u308b\u6a39\u8449\u82b1")},
-        {"data/bgm/st02", QString::fromWCharArray(L"\u8e0a\u308b\u6c34\u98db\u6cab")},
-        {"data/bgm/st03", QString::fromWCharArray(L"\u5632\u308a\u306e\u904a\u622f")},
-        {"data/bgm/st04", QString::fromWCharArray(L"\u9ed2\u3044\u6d77\u306b\u7d05\u304f \uff5e Legendary Fish")},
-        {"data/bgm/st05", QString::fromWCharArray(L"\u6709\u9802\u5929\u5909 \uff5e Wonderful Heaven")},
-        {"data/bgm/st06", QString::fromWCharArray(L"\u5e7c\u5fc3\u5730\u306e\u6709\u9802\u5929")},
-        {"data/bgm/st10", QString::fromWCharArray(L"\u6771\u65b9\u5996\u604b\u8ac7")},
-        {"data/bgm/st11", QString::fromWCharArray(L"\u661f\u306e\u5668 \uff5e Casket of Star")},
-        {"data/bgm/st12", QString::fromWCharArray(L"\u30d5\u30e9\u30ef\u30ea\u30f3\u30b0\u30ca\u30a4\u30c8")},
-        {"data/bgm/st13", QString::fromWCharArray(L"\u30d6\u30af\u30ec\u30b7\u30e5\u30c6\u30a3\u306e\u4eba\u5f62\u5e2b")},
-        {"data/bgm/st14", QString::fromWCharArray(L"\u5e83\u6709\u5c04\u602a\u9ce5\u4e8b \uff5e Till When\uff1f")},
-        {"data/bgm/st15", QString::fromWCharArray(L"\u30e9\u30af\u30c8\u30ac\u30fc\u30eb \uff5e \u5c11\u5973\u5bc6\u5ba4")},
-        {"data/bgm/st16", QString::fromWCharArray(L"\u5e7d\u96c5\u306b\u54b2\u304b\u305b\u3001\u58a8\u67d3\u306e\u685c \uff5e Border of Life")},
-        {"data/bgm/st17", QString::fromWCharArray(L"\u4ea1\u304d\u738b\u5973\u306e\u70ba\u306e\u30bb\u30d7\u30c6\u30c3\u30c8")},
-        {"data/bgm/st18", QString::fromWCharArray(L"\u591c\u304c\u964d\u308a\u3066\u304f\u308b")},
-        {"data/bgm/st19", QString::fromWCharArray(L"\u7815\u6708")},
-        {"data/bgm/st20", QString::fromWCharArray(L"\u72c2\u6c17\u306e\u77b3 \uff5e Invisible Full Moon")},
-        {"data/bgm/st21", QString::fromWCharArray(L"\u98a8\u795e\u5c11\u5973")},
-        {"data/bgm/st22", QString::fromWCharArray(L"\u5f7c\u5cb8\u5e30\u822a \uff5e Riverside View")},
+    const QString SongData[][3] = {
+        {"data/bgm/op", QString::fromWCharArray(L"\u7dcb\u60f3\u5929"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/sr", QString::fromWCharArray(L"\u6771\u65b9\u7dcb\u60f3\u5929"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/ta00", QString::fromWCharArray(L"\u65e5\u5e38\u5750\u81e5"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/ta01", QString::fromWCharArray(L"\u7532\u8ad6\u4e59\u99c1"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/ta02", QString::fromWCharArray(L"\u96f2\u5916\u84bc\u5929"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/ta03", QString::fromWCharArray(L"\u98a8\u5149\u660e\u5a9a"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/ta04", QString::fromWCharArray(L"\u51b7\u541f\u9591\u9154"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/ta05", QString::fromWCharArray(L"\u4ee5\u9b5a\u99c6\u8805"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/ta06", QString::fromWCharArray(L"\u66ae\u8272\u84bc\u7136"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/ta07", QString::fromWCharArray(L"\u5929\u8863\u7121\u7e2b"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/ta08", QString::fromWCharArray(L"\u653e\u7e26\u4e0d\u7f88"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st00", QString::fromWCharArray(L"\u5730\u306e\u8272\u306f\u9ec4\u8272"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st01", QString::fromWCharArray(L"\u9999\u308b\u6a39\u8449\u82b1"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st02", QString::fromWCharArray(L"\u8e0a\u308b\u6c34\u98db\u6cab"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st03", QString::fromWCharArray(L"\u5632\u308a\u306e\u904a\u622f"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st04", QString::fromWCharArray(L"\u9ed2\u3044\u6d77\u306b\u7d05\u304f \uff5e Legendary Fish"), QString::fromWCharArray(L"ZUN")},
+        {"data/bgm/st05", QString::fromWCharArray(L"\u6709\u9802\u5929\u5909 \uff5e Wonderful Heaven"), QString::fromWCharArray(L"ZUN")},
+        {"data/bgm/st06", QString::fromWCharArray(L"\u5e7c\u5fc3\u5730\u306e\u6709\u9802\u5929"), QString::fromWCharArray(L"ZUN")},
+        {"data/bgm/st10", QString::fromWCharArray(L"\u6771\u65b9\u5996\u604b\u8ac7"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st11", QString::fromWCharArray(L"\u661f\u306e\u5668 \uff5e Casket of Star"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st12", QString::fromWCharArray(L"\u30d5\u30e9\u30ef\u30ea\u30f3\u30b0\u30ca\u30a4\u30c8"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st13", QString::fromWCharArray(L"\u30d6\u30af\u30ec\u30b7\u30e5\u30c6\u30a3\u306e\u4eba\u5f62\u5e2b"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st14", QString::fromWCharArray(L"\u5e83\u6709\u5c04\u602a\u9ce5\u4e8b \uff5e Till When\uff1f"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st15", QString::fromWCharArray(L"\u30e9\u30af\u30c8\u30ac\u30fc\u30eb \uff5e \u5c11\u5973\u5bc6\u5ba4"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st16", QString::fromWCharArray(L"\u5e7d\u96c5\u306b\u54b2\u304b\u305b\u3001\u58a8\u67d3\u306e\u685c \uff5e Border of Life"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st17", QString::fromWCharArray(L"\u4ea1\u304d\u738b\u5973\u306e\u70ba\u306e\u30bb\u30d7\u30c6\u30c3\u30c8"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st18", QString::fromWCharArray(L"\u591c\u304c\u964d\u308a\u3066\u304f\u308b"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st19", QString::fromWCharArray(L"\u7815\u6708"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st20", QString::fromWCharArray(L"\u72c2\u6c17\u306e\u77b3 \uff5e Invisible Full Moon"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st21", QString::fromWCharArray(L"\u98a8\u795e\u5c11\u5973"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
+        {"data/bgm/st22", QString::fromWCharArray(L"\u5f7c\u5cb8\u5e30\u822a \uff5e Riverside View"), QString::fromWCharArray(L"\u3042\u304d\u3084\u307e\u3046\u306b")},
     };
     const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
     const QString FileName("th105b.dat");
@@ -252,7 +252,7 @@ bool Th105Loader::open(const QString &path)
         if (info_hash.contains(sfl))
         {
             FileInfo cueinfo = info_hash.value(sfl);
-// SoundForge sfl file parser
+
             file.seek(cueinfo.offset);
             QByteArray cue(file.read(cueinfo.size));
             decode(cue.data(), cueinfo);
@@ -261,91 +261,6 @@ bool Th105Loader::open(const QString &path)
             cuefile.open(QIODevice::ReadOnly);
             if (!SFLParser(cuefile, 0, cueinfo.size, info.loopBegin, info.loopEnd))
                 return false;
-
-            /*
-            file.seek(cueinfo.offset);
-            QByteArray cue(file.read(cueinfo.size));
-            decode(cue.data(), cueinfo);
-
-            if (cue.size() > 16 && cue.startsWith("RIFF"))
-            {
-                int cursor = 4;
-                int data_size = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) + cursor;
-                cursor += 4;
-                char *data_title = cue.data() + cursor;
-                cursor += 4;
-                if (qstrncmp(data_title, "SFPL", 4) == 0)
-                {
-                    while (cursor < data_size)
-                    {
-                        char *section_title = cue.data() + cursor;
-                        cursor += 4;
-                        int section_size = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor));
-                        cursor += 4;
-                        int section_end = section_size + cursor;
-                        if (qstrncmp(section_title, "cue ", 4) == 0)
-                        {
-                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 1);
-                            cursor += 4;
-                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 1);
-                            cursor += 4;
-                            info.loopBegin = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor));
-                            cursor += 4;
-                            Q_ASSERT(qstrncmp(cue.data() + cursor, "data", 4) == 0);
-                            cursor += 4;
-                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 0);
-                            cursor += 4;
-                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 0);
-                            cursor += 4;
-                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == info.loopBegin);
-                            cursor += 4;
-                            Q_ASSERT(cursor == section_end);
-                        }
-                        else if (qstrncmp(section_title, "LIST", 4) == 0)
-                        {
-                            Q_ASSERT(qstrncmp(cue.data(), "RIFF", 4) == 0);
-                            cursor += 4;
-                            while (cursor < section_end)
-                            {
-                                char *frag_title = cue.data() + cursor;
-                                cursor += 4;
-                                int frag_size = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor));
-                                cursor += 4;
-                                int frag_end = frag_size + cursor;
-                                if (qstrncmp(frag_title, "ltxt", 4) == 0)
-                                {
-                                    Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 1);
-                                    cursor += 4;
-                                    info.loopEnd = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor));
-                                    cursor += 4;
-                                    Q_ASSERT(qstrncmp(cue.data() + cursor, "rgn ", 4) == 0);
-                                    cursor += 4;
-                                    Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 0);
-                                    cursor += 4;
-                                    Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 0);
-                                    cursor += 4;
-                                    Q_ASSERT(cursor == frag_end);
-                                }
-                                else if (qstrncmp(frag_title, "labl", 4) == 0)
-                                {
-                                    Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 1);
-                                    cursor += 4;
-                                    //qDebug("%s", cue.data() + cursor);
-                                    cursor = frag_end;
-                                }
-                            }
-                        }
-                        else if (qstrncmp(section_title, "SFPI", 4) == 0)
-                        {
-                            //qDebug("%s", cue.data() + cursor);
-                            cursor = section_end;
-                        }
-                    }
-                }
-                //qDebug("start=%u during=%u", loop_begin, loop_during);
-                info.loopEnd += info.loopBegin;
-            }
-            */
         }
         else // for data/bgm/sr.ogg
         {
@@ -368,7 +283,10 @@ MusicData Th105Loader::at(uint index)
     return MusicData(
         SongData[index][0] + ".ogg",
         SongData[index][1],
+        SongData[index][2],
         Title,
+        index + 1,
+        SongDataSize,
         ".ogg",
         info.size,
         true,

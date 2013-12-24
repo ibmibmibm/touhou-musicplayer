@@ -24,6 +24,7 @@ class MusicFile_Wav : public MusicFile
 
     protected:
         MusicFile_Wav(const MusicData& fileDescription);
+
     public:
         typedef MusicFile::OpenMode OpenMode;
         friend class MusicFileFactory;
@@ -39,15 +40,15 @@ class MusicFile_Wav : public MusicFile
             _BigEndian,
         };
 
-        uint format() const { return _format; }
-        uint bytespersec() const { return _bytespersec; }
-        uint blockalign() const { return _blockalign; }
-
     protected:
         virtual qint64 readData(char * data, qint64 maxSize);
-        void setErrorString(const QString & str);
-        void setOpenMode(OpenMode openMode);
 
+    private:
+        bool _parseHeader();
+        template <typename T, typename U>
+        bool _getFieldFromFile(U &data);
+        void _removeLeadingZeros();
+        void _initializeAsRawData();
         _Endian _endian;
         uint _format;
         uint _bytespersec;
@@ -56,9 +57,6 @@ class MusicFile_Wav : public MusicFile
         qint64 _dataBegin;
         qint64 _dataSize;
         qint64 _dataEnd;
-
-    private:
-        bool _parseHeader();
 
     public:
         static MusicFile* createFunction(const MusicData& fileDescription) { return new MusicFile_Wav(fileDescription); }

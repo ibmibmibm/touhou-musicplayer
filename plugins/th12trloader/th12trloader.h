@@ -14,28 +14,41 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "musicsaver.h"
+#ifndef TH12TRLOADER_H
+#define TH12TRLOADER_H
+#include <QObject>
+#include <QString>
+#include <QHash>
+#include <QDir>
+#include <QByteArray>
+#include "loaderinterface.h"
 
-MusicSaver::MusicSaver()
+struct FileInfo
 {
-}
+    uint offset;
+    uint loopBegin;
+    uint loopEnd;
+    uint checksum;
+    quint64 size;
+    QString name;
+    QByteArray header;
+};
 
-QHash<QString, MusicSaverFactory::CreateFunction> MusicSaverFactory::functionHash;
-
-int MusicSaverFactory::registerMusicSaver(const QString& filterString, CreateFunction createFunction)
+class Th12TrLoader : public QObject, public LoaderInterface
 {
-    functionHash.insert(filterString, createFunction);
-    return functionHash.size();
-}
+    Q_OBJECT
+    Q_INTERFACES(LoaderInterface)
 
-MusicSaver* MusicSaverFactory::createMusicSaver(const QString& filterString)
-{
-    Q_ASSERT(functionHash.contains(filterString));
-    return functionHash.value(filterString)();
-}
+    public:
+        Th12TrLoader() {}
+        const QString& title() const;
+        bool open(const QString &);
+        void close();
+        MusicData at(uint index);
+        uint size() const;
+    private:
+        QHash<QString, FileInfo> info_hash;
+        QDir dir;
+};
 
-QStringList MusicSaverFactory::filterStringList()
-{
-    QStringList filterList(functionHash.keys());
-    return filterList;
-}
+#endif //TH12TRLOADER_H

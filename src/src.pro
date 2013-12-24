@@ -21,8 +21,11 @@ HEADERS      += ../include/mainwindow.h \
                 ../include/configdialog.h \
                 ../include/pluginloader.h \
                 ../include/musicplayer.h \
+                ../include/playlistmodel.h \
+                ../include/spinboxdelegate.h \
                 ../include/musicsaver.h \
                 ../include/musicsaver_wav.h \
+                ../include/musicsaver_flac.h \
                 ../include/musicfile.h \
                 ../include/musicfile_wav.h \
                 ../include/musicfile_ogg.h \
@@ -34,8 +37,11 @@ SOURCES      += main.cpp \
                 mainwindow.cpp \
                 pluginloader.cpp \
                 musicplayer.cpp \
+                playlistmodel.cpp \
+                spinboxdelegate.cpp \
                 musicsaver.cpp \
                 musicsaver_wav.cpp \
+                musicsaver_flac.cpp \
                 musicfile.cpp \
                 musicfile_wav.cpp \
                 musicfile_ogg.cpp \
@@ -57,6 +63,6 @@ unix {
     #QMAKE_CXXFLAGS += -pg
     #QMAKE_LFLAGS += -pg
     CONFIG    += link_pkgconfig
-    PKGCONFIG += portaudio-2.0 vorbisfile
+    PKGCONFIG += portaudio-2.0 vorbisfile flac
 }
 

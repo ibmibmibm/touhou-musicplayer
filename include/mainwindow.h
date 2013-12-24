@@ -24,11 +24,14 @@
 #include "musicdata.h"
 
 class QAction;
+class QTableView;
 class QTableWidget;
 class QLCDNumber;
 class QLabel;
 
 class PluginLoader;
+class PlaylistModel;
+class SpinBoxDelegate;
 
 class MainWindow : public QMainWindow
 {
@@ -38,9 +41,7 @@ class MainWindow : public QMainWindow
         MainWindow();
         ~MainWindow();
 
-        QSize sizeHint() const {
-            return QSize(800, 600);
-        }
+        QSize sizeHint() const { return QSize(800, 600); }
 
     protected:
         void closeEvent(QCloseEvent *event);
@@ -58,7 +59,8 @@ class MainWindow : public QMainWindow
         void tick(qint64 sample);
         void currentMusicChanged(const MusicData& musicData);
         void aboutToFinish();
-        void musicChanged(int row, int = 0);
+        void musicChanged(int row, int column = 0);
+        void playlistDoubleClicked(const QModelIndex& index);
         void seek(int newValue) { musicPlayer->seek(newValue); }
         void setVolume(int newVolume) { musicPlayer->setVolume(newVolume * 0.0078125); }
         void setVolume(qreal newVolume) { volumeSlider->setValue(newVolume * 128.0); }
@@ -68,16 +70,20 @@ class MainWindow : public QMainWindow
         void setupActions();
         void setupMenus();
         void setupUi();
+        void _loadSettingLoadOnStartup();
+        void _loadSettingPluginLoaderPath();
+        void _loadSettingPlaylist();
 
         QSlider *seekSlider;
         QSlider *volumeSlider;
         QLabel *titleLabel;
-        QTableWidget *musicTable;
-        QList<MusicData> musicDataList;
+        QTableView *playlistTableView;
         int currentIndex;
 
         PluginLoader *pluginLoader;
         MusicPlayer *musicPlayer;
+        PlaylistModel *playlistModel;
+        SpinBoxDelegate *spinBoxDelegate;
         QString loadingTitle;
 
         QAction *playAction;

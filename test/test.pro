@@ -14,15 +14,6 @@
 # along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
 TEMPLATE      = subdirs
 CONFIG       += debug_and_release
-SUBDIRS       = th06loader \
-                th07loader \
-                th075loader \
-                th08loader \
-                th09loader \
-                th095loader \
-                th10loader \
-                th105loader \
-                alcoloader \
-                th11loader \
-                th12trloader
+SUBDIRS       = musicfile_wav \
+                musicfile_ogg
 

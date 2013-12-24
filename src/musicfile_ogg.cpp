@@ -18,6 +18,7 @@
 #include <vorbis/vorbisfile.h>
 #include <QtEndian>
 #include <QMutex>
+#include <QtDebug>
 
 #include "musicfile_ogg.h"
 
@@ -198,6 +199,8 @@ qint64 _MusicFile_OggCore::readData(char* data, qint64 maxSize)
             case OV_EINVAL:
                 //qDebug() << Q_FUNC_INFO << "OV_EINVAL";
                 return -1;
+            case 0:
+                return size;
             default:
                 break;
         }
@@ -265,13 +268,16 @@ bool MusicFile_Ogg::open(OpenMode mode)
         return false;
     MusicFile::seek(0);
     if (!_core->test())
-        goto err;
+    {
+        MusicFile::close();
+        return false;
+    }
     if (!_core->open())
-        goto err;
+    {
+        MusicFile::close();
+        return false;
+    }
     return true;
-err:
-    MusicFile::close();
-    return false;
 }
 
 void MusicFile_Ogg::close()

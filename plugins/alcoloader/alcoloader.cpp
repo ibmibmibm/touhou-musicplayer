@@ -19,37 +19,26 @@
 #include <QList>
 #include <QFileInfo>
 
-#include "th10loader.h"
+#include "alcoloader.h"
 #include "helperfuncs.h"
 
-Q_EXPORT_PLUGIN2("Th10Loader", Th10Loader)
+Q_EXPORT_PLUGIN2("AlcoLoader", AlcoLoader)
 
 namespace {
-    const QString Title = QString::fromWCharArray(L"\u6771\u65b9\u98a8\u795e\u9332\u3000\u301c Mountain of Faith.");
-    const QString SongData[][2] = {
-        {"02", QString::fromWCharArray(L"\u5c01\u5370\u3055\u308c\u3057\u795e\u3005")},
-        {"00", QString::fromWCharArray(L"\u4eba\u604b\u3057\u795e\u69d8\u3000\u301c Romantic Fall")},
-        {"01", QString::fromWCharArray(L"\u7a32\u7530\u59eb\u69d8\u306b\u53f1\u3089\u308c\u308b\u304b\u3089")},
-        {"03", QString::fromWCharArray(L"\u5384\u795e\u69d8\u306e\u901a\u308a\u9053\u3000\u301c Dark Road")},
-        {"04", QString::fromWCharArray(L"\u904b\u547d\u306e\u30c0\u30fc\u30af\u30b5\u30a4\u30c9")},
-        {"05", QString::fromWCharArray(L"\u795e\u3005\u304c\u604b\u3057\u305f\u5e7b\u60f3\u90f7")},
-        {"06", QString::fromWCharArray(L"\u82a5\u5ddd\u9f8d\u4e4b\u4ecb\u306e\u6cb3\u7ae5\u3000\u301c Candid Friend")},
-        {"07", QString::fromWCharArray(L"\u30d5\u30a9\u30fc\u30eb\u30aa\u30d6\u30d5\u30a9\u30fc\u30eb\u3000\u301c \u79cb\u3081\u304f\u6edd")},
-        {"08", QString::fromWCharArray(L"\u5996\u602a\u306e\u5c71\u3000\u301c Mysterious Mountain")},
-        {"09", QString::fromWCharArray(L"\u5c11\u5973\u304c\u898b\u305f\u65e5\u672c\u306e\u539f\u98a8\u666f")},
-        {"10", QString::fromWCharArray(L"\u4fe1\u4ef0\u306f\u511a\u304d\u4eba\u9593\u306e\u70ba\u306b")},
-        {"11", QString::fromWCharArray(L"\u5fa1\u67f1\u306e\u5893\u5834\u3000\u301c Grave of Being")},
-        {"12", QString::fromWCharArray(L"\u795e\u3055\u3073\u305f\u53e4\u6226\u5834\u3000\u301c Suwa Foughten Field")},
-        {"15", QString::fromWCharArray(L"\u660e\u65e5\u30cf\u30ec\u306e\u65e5\u3001\u30b1\u306e\u6628\u65e5")},
-        {"16", QString::fromWCharArray(L"\u30cd\u30a4\u30c6\u30a3\u30d6\u30d5\u30a7\u30a4\u30b9")},
-        {"13", QString::fromWCharArray(L"\u9e93\u306e\u795e\u793e")},
-        {"14", QString::fromWCharArray(L"\u795e\u306f\u6075\u307f\u306e\u96e8\u3092\u964d\u3089\u3059\u3000\u301c Sylphid Dream")},
-        {"17", QString::fromWCharArray(L"\u30d7\u30ec\u30a4\u30e4\u30fc\u30ba\u30b9\u30b3\u30a2")},
+    const QString Title = QString::fromWCharArray(L"\u9ec4\u660f\u9152\u5834\u3000\u301c Uwabami Breakers");
+    const QString SongData[][3] = {
+        {"01", QString::fromWCharArray(L"step u/b"), QString::fromWCharArray(L"\u9aa8\u6298\u98f2\u6599")},
+        {"02", QString::fromWCharArray(L"chase the Twilight"), QString::fromWCharArray(L"\u9aa8\u6298\u98f2\u6599")},
+        {"03", QString::fromWCharArray(L"\u5451\u3093\u3079\u3047\u306e\u30ec\u30e0\u30ea\u30a2"), QString::fromWCharArray(L"ZUN")},
+        {"04", QString::fromWCharArray(L"Festiv-al-colohically"), QString::fromWCharArray(L"\u9aa8\u6298\u98f2\u6599")},
+        {"05", QString::fromWCharArray(L"Valse Alcoholique"), QString::fromWCharArray(L"\u7fbd\u9ce5\u98a8\u753b")},
+        {"06", QString::fromWCharArray(L"\u7d76\u5bfe\u5927\u4e08\u592b\u3060\u3088\uff01\uff01\u3044\u304f\u3089\u98f2\u3093\u3067\u3082\u671d\u304c\u6765\u308b\u3088\uff01\uff01"), QString::fromWCharArray(L"Kiyoma")},
+        {"07", QString::fromWCharArray(L"step u/b (lazy style)"), QString::fromWCharArray(L"\u9aa8\u6298\u98f2\u6599")},
     };
     const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
-    const QString FileName("th10.dat");
-    const QString BgmName("thbgm.dat");
-    const QString WavName("th10_%1.wav");
+    const QString FileName("alcostg.dat");
+    const QString BgmName("albgm.dat");
+    const QString WavName("alcostg%1.wav");
 
     struct THA1PreHeader
     {
@@ -106,17 +95,17 @@ namespace {
     }
 }
 
-const QString& Th10Loader::title() const
+const QString& AlcoLoader::title() const
 {
     return Title;
 }
 
-uint Th10Loader::size() const
+uint AlcoLoader::size() const
 {
     return SongDataSize;
 }
 
-bool Th10Loader::open(const QString &path)
+bool AlcoLoader::open(const QString &path)
 {
     dir = QDir(path);
     if (!dir.exists(FileName) || !dir.exists(BgmName))
@@ -144,17 +133,17 @@ bool Th10Loader::open(const QString &path)
             return false;
     }
 
-    QByteArray thbgm_data;
+    QByteArray albgm_data;
     {
 // Stage 2
         header_pos = file.size() - header_csize;
         file.seek(header_pos);
         QByteArray header = lzDecompress(decode(file.read(header_csize), 0x3e, header_csize, 0x9b, 0x80, header_csize));
         char* cursor = header.data();
-        uint thbgm_key;
-        uint thbgm_offset;
-        uint thbgm_dsize;
-        uint thbgm_csize;
+        uint albgm_key;
+        uint albgm_offset;
+        uint albgm_dsize;
+        uint albgm_csize;
         for (uint i = 0; ; ++i)
         {
             if (i == max_file_count)
@@ -164,50 +153,51 @@ bool Th10Loader::open(const QString &path)
                 size_t s = qstrlen(cursor) + 1;
                 cursor += s + (-s & 3);
             }
-            if (name != "thbgm.fmt")
+            if (name != "albgm.fmt")
             {
                 cursor += 12;
                 continue;
             }
-            thbgm_key = ('t'+'h'+'b'+'g'+'m'+'.'+'f'+'m'+'t') & 0x7;
-            thbgm_offset = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)); //offset
+            albgm_key = ('a'+'l'+'b'+'g'+'m'+'.'+'f'+'m'+'t') & 0x7;
+            albgm_offset = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)); //offset
             cursor += 4;
-            thbgm_dsize = qFromLittleEndian<qint64>(reinterpret_cast<uchar*>(cursor)); //size
+            albgm_dsize = qFromLittleEndian<qint64>(reinterpret_cast<uchar*>(cursor)); //size
             cursor += 8;
             if (cursor < (header.data() + header.size()))
             {
                 size_t s = qstrlen(cursor) + 1;
                 cursor += s + (-s & 3);
-                thbgm_csize = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)) - thbgm_offset;
+                albgm_csize = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)) - albgm_offset;
             }
             else
-                thbgm_csize = header_pos - thbgm_offset;
+                albgm_csize = header_pos - albgm_offset;
             break;
         }
-        file.seek(thbgm_offset);
-        thbgm_data = file.read(thbgm_csize);
-        thbgm_data = decode(thbgm_data, KeyData[thbgm_key][0], thbgm_csize, KeyData[thbgm_key][1], KeyData[thbgm_key][2], KeyData[thbgm_key][3]);
-        if (thbgm_csize != thbgm_dsize)
-            thbgm_data = lzDecompress(thbgm_data, thbgm_dsize);
+        file.seek(albgm_offset);
+        albgm_data = file.read(albgm_csize);
+        albgm_data = decode(albgm_data, KeyData[albgm_key][0], albgm_csize, KeyData[albgm_key][1], KeyData[albgm_key][2], KeyData[albgm_key][3]);
+        if (albgm_csize != albgm_dsize)
+            albgm_data = lzDecompress(albgm_data, albgm_dsize);
     }
 // Stage3
     {
         QList<FileInfo> info_list;
-        ThbgmData* thbgmData = reinterpret_cast<ThbgmData*>(thbgm_data.data());
+        ThbgmData* albgmData = reinterpret_cast<ThbgmData*>(albgm_data.data());
         for (uint i = 0; i < SongDataSize; ++i)
         {
             FileInfo info;
-            info.name = thbgmData[i].name;
-            info.offset = qFromLittleEndian<qint32>(thbgmData[i].offset);
-            info.checksum = qFromLittleEndian<qint32>(thbgmData[i].checksum);
-            info.loopBegin = qFromLittleEndian<qint32>(thbgmData[i].loopBegin) >> 2;
-            info.loopEnd = qFromLittleEndian<qint32>(thbgmData[i].loopEnd) >> 2;
-            info.header = QByteArray(thbgmData[i].header, 16);
+            info.name = albgmData[i].name;
+            info.offset = qFromLittleEndian<qint32>(albgmData[i].offset);
+            info.checksum = qFromLittleEndian<qint32>(albgmData[i].checksum);
+            info.loopBegin = qFromLittleEndian<qint32>(albgmData[i].loopBegin) >> 2;
+            info.loopEnd = qFromLittleEndian<qint32>(albgmData[i].loopEnd) >> 2;
+            info.header = QByteArray(albgmData[i].header, 16);
             if (i)
                 info_list[i - 1].size = info.offset - info_list[i - 1].offset;
             info_list << info;
         }
         info_list[SongDataSize - 1].size = QFileInfo(dir.filePath(BgmName)).size() - info_list[SongDataSize - 1].offset;
+        info_list[SongDataSize - 1].loopEnd = info_list[SongDataSize - 1].size >> 2;
         foreach(FileInfo info, info_list)
         {
             info_hash.insert(info.name, info);
@@ -220,17 +210,17 @@ bool Th10Loader::open(const QString &path)
     return true;
 }
 
-MusicData Th10Loader::at(uint index)
+MusicData AlcoLoader::at(uint index)
 {
     Q_ASSERT(index < SongDataSize);
     FileInfo info = info_hash.value(WavName.arg(SongData[index][0]));
     ArchiveMusicData archiveMusicData(dir.absoluteFilePath(BgmName), info.offset, info.offset + info.size);
-    //qDebug() << info.name << Title;
+    //qDebug() << info.name << info.loopBegin << info.loopEnd << info.size;
 
     return MusicData(
         info.name,
         SongData[index][1],
-        "ZUN",
+        SongData[index][2],
         Title,
         index + 1,
         SongDataSize,
@@ -243,7 +233,7 @@ MusicData Th10Loader::at(uint index)
     );
 }
 
-void Th10Loader::close()
+void AlcoLoader::close()
 {
     info_hash.clear();
 }

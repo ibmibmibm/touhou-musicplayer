@@ -22,9 +22,10 @@ http://trolltech.com/products/qt
 PortAudio
 http://www.portaudio.com/
 
-libvorbisfile+libogg
+libvorbisfile+libogg+libflac
 http://www.xiph.org/vorbis/
 http://www.xiph.org/ogg/
+http://flac.sourceforge.net/
 
 Then just
 $ qmake

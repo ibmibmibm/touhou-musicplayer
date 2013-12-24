@@ -22,16 +22,15 @@ MusicFile::MusicFile(const MusicData& fileDescription) :
     _loop(fileDescription.loop()),
     _loopBegin(fileDescription.loopBegin()),
     _loopEnd(fileDescription.loopEnd()),
+    _title(fileDescription.title()),
+    _album(fileDescription.album()),
     _fileName(fileDescription.fileName()),
     _fileEngine(QAbstractFileEngine::create(_fileName))
 {
-    //qDebug() << _fileName;
-    //qDebug() << Q_FUNC_INFO << fileDescription.fileName << fileDescription.loop << fileDescription.loopBegin << fileDescription.loopEnd;
-    if (fileDescription.archiveMusicData().data() != NULL)
-    {
-        _archiveMusicData = fileDescription.archiveMusicData();
-        setFileName(_archiveMusicData->archiveFileName);
-    }
+    if (fileDescription.archiveMusicData().data() == NULL)
+        return;
+    _archiveMusicData = fileDescription.archiveMusicData();
+    setFileName(_archiveMusicData->archiveFileName);
 }
 
 const QString& MusicFile::fileName() const
@@ -41,7 +40,6 @@ const QString& MusicFile::fileName() const
 
 void MusicFile::setFileName(const QString& fileName)
 {
-    //qDebug() << Q_FUNC_INFO
     delete _fileEngine;
     _fileEngine = QAbstractFileEngine::create(fileName);
     _fileName = fileName;
@@ -49,21 +47,18 @@ void MusicFile::setFileName(const QString& fileName)
 
 void MusicFile::setFileDescription(const MusicData& fileDescription)
 {
-    //qDebug() << Q_FUNC_INFO
     setFileName(fileDescription.fileName());
     _loop = fileDescription.loop();
     _loopBegin = fileDescription.loopBegin();
     _loopEnd = fileDescription.loopEnd();
-    if (fileDescription.archiveMusicData().data() != NULL)
-    {
-        _archiveMusicData = fileDescription.archiveMusicData();
-        setFileName(_archiveMusicData->archiveFileName);
-    }
+    if (fileDescription.archiveMusicData().data() == NULL)
+        return;
+    _archiveMusicData = fileDescription.archiveMusicData();
+    setFileName(_archiveMusicData->archiveFileName);
 }
 
 bool MusicFile::open(OpenMode mode)
 {
-    //qDebug() << Q_FUNC_INFO << mode << static_cast<int>(mode);
     Q_ASSERT(!(mode & QIODevice::ReadOnly) || !(mode & QIODevice::Text));
     Q_ASSERT(!(mode & QIODevice::Text));
     Q_ASSERT(!(mode & QIODevice::Append));
@@ -73,23 +68,17 @@ bool MusicFile::open(OpenMode mode)
 qint64 MusicFile::_pos() const
 {
     if (_archiveMusicData.data() == NULL)
-    {
-        //qDebug() << Q_FUNC_INFO << "pos" << _fileEngine->pos();
         return _fileEngine->pos();
-    }
-    //qDebug() << Q_FUNC_INFO << "pos" << _fileEngine->pos() - _archiveMusicData->dataBegin;
     return _fileEngine->pos() - _archiveMusicData->dataBegin;
 }
 
 qint64 MusicFile::size() const
 {
-    //qDebug() << Q_FUNC_INFO;
     return _size();
 }
 
 qint64 MusicFile::_size() const
 {
-    //qDebug() << Q_FUNC_INFO << "_fileEngine->size()" << _fileEngine->size();
     if (_archiveMusicData.data() == NULL)
         return _fileEngine->size();
     return _archiveMusicData->dataEnd - _archiveMusicData->dataBegin;
@@ -97,13 +86,11 @@ qint64 MusicFile::_size() const
 
 bool MusicFile::seek(qint64 pos)
 {
-    //qDebug() << Q_FUNC_INFO;
     return QIODevice::seek(pos) && _seek(pos);
 }
 
 bool MusicFile::_seek(qint64 pos)
 {
-    //qDebug() << Q_FUNC_INFO << "pos" << pos;
     if (pos < 0)
     {
         qWarning() << Q_FUNC_INFO << ": try to seek to " << pos << ", a negative position.";
@@ -116,30 +103,21 @@ bool MusicFile::_seek(qint64 pos)
         qWarning() << Q_FUNC_INFO << ": try to seek to " << pos << ", a invalid position.";
         return false;
     }
-    //qDebug() << Q_FUNC_INFO << "adjected" << _archiveMusicData->dataBegin + pos;
     return _fileEngine->seek(_archiveMusicData->dataBegin + pos);
 }
 
 bool MusicFile::reset()
 {
-    //qDebug() << Q_FUNC_INFO;
     return _reset();
 }
 
 bool MusicFile::_reset()
 {
-    //qDebug() << Q_FUNC_INFO;
-    bool result = QIODevice::reset();
-    if (_archiveMusicData.data() == NULL)
-        result &= _fileEngine->seek(0);
-    else
-        result &= _fileEngine->seek(_archiveMusicData->dataBegin);
-    return result;
+    return QIODevice::reset() & _fileEngine->seek((_archiveMusicData.data() == NULL) ? 0 : _archiveMusicData->dataBegin);
 }
 
 qint64 MusicFile::readData(char* data, qint64 maxSize)
 {
-    //qDebug() << Q_FUNC_INFO << "maxSize" << maxSize;
     return _readData(data, maxSize);
 }
 
@@ -147,21 +125,17 @@ qint64 MusicFile::_readData(char* data, qint64 maxSize)
 {
     if (_archiveMusicData.data() == NULL)
         return _fileEngine->read(data, maxSize);
-    //qDebug() << Q_FUNC_INFO << "_fileEngine->pos()" << _fileEngine->pos() << "_archiveMusicData->dataEnd" << _archiveMusicData->dataEnd;
-    maxSize = qMin(maxSize, _archiveMusicData->dataEnd - _fileEngine->pos());
-    //qDebug() << Q_FUNC_INFO << "adjected" << maxSize;
-    if (maxSize <= 0)
+    qint64 realMaxSize = qMin(maxSize, _archiveMusicData->dataEnd - _fileEngine->pos());
+    if (realMaxSize <= 0)
         return 0;
     if (_archiveMusicData->decoder == NULL)
-        return _fileEngine->read(data, maxSize);
-    qint64 result = _fileEngine->read(data, maxSize);
+        return _fileEngine->read(data, realMaxSize);
+    qint64 result = _fileEngine->read(data, realMaxSize);
     for (qint64 i = 0; i < result; ++i)
-    {
         data[i] = _archiveMusicData->decoder(_archiveMusicData->userData, data[i]);
-    }
-    //qDebug() << Q_FUNC_INFO << "result" << result;
     return result;
 }
+
 
 QHash<QString, MusicFileFactory::CreateFunction> MusicFileFactory::functionHash;
 

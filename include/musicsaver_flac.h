@@ -14,28 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef MUSICSAVER_FLAC_H
+#define MUSICSAVER_FLAC_H
 #include "musicsaver.h"
 
-MusicSaver::MusicSaver()
+class MusicSaver_Flac : public MusicSaver
 {
-}
+    public:
+        virtual bool save(const QString& filename, MusicData musicData, uint loop);
+        virtual QString suffix() { return ".flac"; }
+        static QString filterString() { return QObject::tr("Free Lossless Audio Codec (*.flac)"); }
+        static MusicSaver* createFunction() { return new MusicSaver_Flac(); }
+};
 
-QHash<QString, MusicSaverFactory::CreateFunction> MusicSaverFactory::functionHash;
-
-int MusicSaverFactory::registerMusicSaver(const QString& filterString, CreateFunction createFunction)
-{
-    functionHash.insert(filterString, createFunction);
-    return functionHash.size();
-}
-
-MusicSaver* MusicSaverFactory::createMusicSaver(const QString& filterString)
-{
-    Q_ASSERT(functionHash.contains(filterString));
-    return functionHash.value(filterString)();
-}
-
-QStringList MusicSaverFactory::filterStringList()
-{
-    QStringList filterList(functionHash.keys());
-    return filterList;
-}
+#endif // MUSICSAVER_FLAC_H
