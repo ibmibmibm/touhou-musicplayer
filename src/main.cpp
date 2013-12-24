@@ -27,7 +27,7 @@
 #include "musicsaver_wav.h"
 #include "musicsaver_flac.h"
 
-const uint VERSION = 0x00060000;
+const uint VERSION = 0x00070000;
 
 void updateSettings()
 {
@@ -70,6 +70,8 @@ void updateSettings()
             prevVersion = 0x00050000;
         case 0x00050000:
             prevVersion = 0x00060000;
+        case 0x00060000:
+            prevVersion = 0x00070000;
             break;
         default:
             qWarning("Unknow version.");

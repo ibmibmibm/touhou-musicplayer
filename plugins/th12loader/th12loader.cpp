@@ -19,13 +19,13 @@
 #include <QList>
 #include <QFileInfo>
 
-#include "th12trloader.h"
+#include "th12loader.h"
 #include "helperfuncs.h"
 
-Q_EXPORT_PLUGIN2("Th12TrLoader", Th12TrLoader)
+Q_EXPORT_PLUGIN2("Th12Loader", Th12Loader)
 
 namespace {
-    const QString Title = QString::fromWCharArray(L"\u6771\u65b9\u661f\u84ee\u8239\u3000\u301c Undefined Fantastic Object. \u4f53\u9a13\u7248");
+    const QString Title = QString::fromWCharArray(L"\u6771\u65b9\u661f\u84ee\u8239\u3000\u301c Undefined Fantastic Object.");
     const QString SongData[][2] = {
         {"01", QString::fromWCharArray(L"\u9752\u7a7a\u306e\u5f71")},
         {"00", QString::fromWCharArray(L"\u6625\u306e\u6e4a\u306b")},
@@ -34,10 +34,20 @@ namespace {
         {"05", QString::fromWCharArray(L"\u4e07\u5e74\u7f6e\u304d\u5098\u306b\u3054\u6ce8\u610f\u3092")},
         {"07", QString::fromWCharArray(L"\u30b9\u30ab\u30a4\u30eb\u30fc\u30a4\u30f3")},
         {"08", QString::fromWCharArray(L"\u6642\u4ee3\u89aa\u7236\u3068\u30cf\u30a4\u30ab\u30e9\u5c11\u5973")},
+        {"09", QString::fromWCharArray(L"\u5e7d\u970a\u5ba2\u8239\u306e\u6642\u7a7a\u3092\u8d8a\u3048\u305f\u65c5")},
+        {"10", QString::fromWCharArray(L"\u30ad\u30e3\u30d7\u30c6\u30f3\u30fb\u30e0\u30e9\u30b5")},
+        {"13", QString::fromWCharArray(L"\u9b54\u754c\u5730\u65b9\u90fd\u5e02\u30a8\u30bd\u30c6\u30ea\u30a2")},
+        {"14", QString::fromWCharArray(L"\u864e\u67c4\u306e\u6bd8\u6c99\u9580\u5929")},
+        {"16", QString::fromWCharArray(L"\u6cd5\u754c\u306e\u706b")},
+        {"17", QString::fromWCharArray(L"\u611f\u60c5\u306e\u6469\u5929\u697c\u3000\u301c Cosmic Mind")},
+        {"18", QString::fromWCharArray(L"\u591c\u7a7a\u306e\u30e6\u30fc\u30d5\u30a9\u30fc\u30ed\u30de\u30f3\u30b9")},
+        {"19", QString::fromWCharArray(L"\u5e73\u5b89\u306e\u30a8\u30a4\u30ea\u30a2\u30f3")},
+        {"20", QString::fromWCharArray(L"\u5996\u602a\u5bfa")},
+        {"21", QString::fromWCharArray(L"\u7a7a\u306e\u5e30\u308a\u9053\u3000\u301c Sky Dream")},
     };
     const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
-    const QString FileName("th12tr.dat");
-    const QString BgmName("thbgm_tr.dat");
+    const QString FileName("th12.dat");
+    const QString BgmName("thbgm.dat");
     const QString WavName("th12_%1.wav");
 
     struct THA1PreHeader
@@ -95,17 +105,17 @@ namespace {
     }
 }
 
-const QString& Th12TrLoader::title() const
+const QString& Th12Loader::title() const
 {
     return Title;
 }
 
-uint Th12TrLoader::size() const
+uint Th12Loader::size() const
 {
     return SongDataSize;
 }
 
-bool Th12TrLoader::open(const QString &path)
+bool Th12Loader::open(const QString &path)
 {
     dir = QDir(path);
     if (!dir.exists(FileName) || !dir.exists(BgmName))
@@ -152,12 +162,12 @@ bool Th12TrLoader::open(const QString &path)
                 size_t s = qstrlen(cursor) + 1;
                 cursor += s + (-s & 3);
             }
-            if (name != "thbgm_tr.fmt")
+            if (name != "thbgm.fmt")
             {
                 cursor += 12;
                 continue;
             }
-            thbgm_key = ('t'+'h'+'b'+'g'+'m'+'_'+'t'+'r'+'.'+'f'+'m'+'t') & 0x7;
+            thbgm_key = ('t'+'h'+'b'+'g'+'m'+'.'+'f'+'m'+'t') & 0x7;
             thbgm_offset = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)); //offset
             cursor += 4;
             thbgm_dsize = qFromLittleEndian<qint64>(reinterpret_cast<uchar*>(cursor)); //size
@@ -208,7 +218,7 @@ bool Th12TrLoader::open(const QString &path)
     return true;
 }
 
-MusicData Th12TrLoader::at(uint index)
+MusicData Th12Loader::at(uint index)
 {
     Q_ASSERT(index < SongDataSize);
     FileInfo info = info_hash.value(WavName.arg(SongData[index][0]));
@@ -230,7 +240,7 @@ MusicData Th12TrLoader::at(uint index)
     );
 }
 
-void Th12TrLoader::close()
+void Th12Loader::close()
 {
     info_hash.clear();
 }

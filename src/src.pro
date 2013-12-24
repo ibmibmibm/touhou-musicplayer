@@ -52,8 +52,8 @@ SOURCES      += main.cpp \
 TRANSLATIONS = ../translations/touhou_musicplayer_zh_TW.ts
 
 win32 {
-    LIBS        += -LC:\portaudio\lib -lportaudio_x86 -LC:\libogg\lib -logg -lvorbis -lvorbisfile
-    INCLUDEPATH += C:\portaudio\include C:\libogg\include
+    LIBS        += -LC:\dev\lib -lportaudio_x86 -llibogg -llibvorbis -llibvorbisfile -llibFLAC_dynamic
+    INCLUDEPATH += C:\dev\include
     CONFIG(debug, debug|release) {
         CONFIG += console
     }

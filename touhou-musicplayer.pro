@@ -15,7 +15,7 @@
 
 TEMPLATE      = subdirs
 CONFIG       += debug_and_release
-SUBDIRS       = src plugins test
+SUBDIRS       = src plugins# test
 
 include(translations/translations.pri)
 

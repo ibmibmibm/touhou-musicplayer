@@ -201,7 +201,9 @@ void MusicPlayer::play()
         settings.endGroup();
     }
     //qDebug() << Q_FUNC_INFO << "Device name" << QString::fromLocal8Bit(Pa_GetDeviceInfo(deviceIndex)->name);
-    Q_ASSERT(_file != NULL);
+    if (!_file)
+        return;
+//    Q_ASSERT(_file != NULL);
     PaStreamParameters outputparam;
     outputparam.device = deviceIndex;
     outputparam.channelCount = _file->channels();

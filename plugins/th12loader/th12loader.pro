@@ -12,13 +12,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
+TEMPLATE      = lib
+CONFIG       += plugin
+CONFIG       += debug_and_release
+INCLUDEPATH  += ../../include
+DESTDIR       = ..
 
-QT          += testlib
-TEMPLATE     = app
-TARGET       =
-INCLUDEPATH += ../../include
-HEADERS     += ../../include/musicfile.h \
-               ../../include/musicfile_wav.h
-SOURCES     += testmusicfile_wav.cpp \
-               ../../src/musicfile.cpp \
-               ../../src/musicfile_wav.cpp
+HEADERS      += ../../include/loaderinterface.h \
+                ../../include/helperfuncs.h \
+                ../../include/musicdata.h \
+                th12loader.h
+SOURCES      += th12loader.cpp

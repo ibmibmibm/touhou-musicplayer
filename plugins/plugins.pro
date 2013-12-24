@@ -24,5 +24,7 @@ SUBDIRS       = th06loader \
                 th105loader \
                 alcoloader \
                 th11loader \
-                th12trloader
+                th12trloader \
+                th12loader \
+                th123loader
 

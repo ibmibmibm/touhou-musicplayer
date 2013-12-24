@@ -16,6 +16,7 @@
  */
 #include <cmath>
 #include <QSettings>
+#include <QtDebug>
 #include "loopmusicfile.h"
 
 LoopMusicFile::LoopMusicFile(const MusicData& musicData, uint totalLoop) :
@@ -45,8 +46,9 @@ bool LoopMusicFile::open(MusicFile::OpenMode mode)
     _fadeoutSamples = static_cast<qint64>(_fadeoutTime * _musicFile->samplerate()) * 0.001;
     if (_fadeoutSamples > loopSize)
     {
-        setErrorString(QObject::tr("Fadeout time is too long."));
-        return false;
+        _fadeoutSamples = loopSize;
+        //setErrorString(QObject::tr("Fadeout time is too long."));
+        //return false;
     }
     _totalSamples = loopBegin + loopSize * _totalLoop + _fadeoutSamples;
     return true;
