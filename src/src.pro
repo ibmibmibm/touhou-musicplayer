@@ -16,23 +16,33 @@
 TARGET        = touhou-musicplayer
 DESTDIR       = ../
 CONFIG       += debug_and_release
-QT           += phonon
 INCLUDEPATH  += ../include
 HEADERS      += ../include/mainwindow.h \
                 ../include/configdialog.h \
                 ../include/pluginloader.h \
                 ../include/musicplayer.h \
                 ../include/musicfile.h \
+                ../include/musicfile_wav.h \
+                ../include/musicfile_ogg.h \
                 ../include/musicdata.h \
                 ../include/loaderinterface.h
 SOURCES      += main.cpp \
                 mainwindow.cpp \
                 pluginloader.cpp \
                 musicplayer.cpp \
+                musicfile.cpp \
+                musicfile_wav.cpp \
+                musicfile_ogg.cpp \
                 configdialog.cpp
 TRANSLATIONS += ../touhou_musicplayer_zh_TW.ts
 
+win32 {
+    LIBS        += -LG:\portaudio\lib -lportaudio_x86 -LG:\libvorbis\lib -logg -lvorbis -lvorbisfile
+    INCLUDEPATH += G:\portaudio\include G:\libvorbis\include
+}
+
 unix {
     CONFIG    += link_pkgconfig
-    PKGCONFIG += portaudiocpp
+    PKGCONFIG += portaudio-2.0 vorbisfile
 }
+

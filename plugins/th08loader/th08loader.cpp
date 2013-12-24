@@ -50,7 +50,7 @@ namespace {
         {"17", QString::fromWCharArray(L"Eternal Dream\u3000\u301c \u5e7d\u7384\u306e\u69ed\u6a39")},
         {"20", QString::fromWCharArray(L"\u6771\u65b9\u5996\u602a\u5c0f\u753a")},
     };
-    const int SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
+    const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
     const QString FileName("th08.dat");
     const QString BgmName("thbgm.dat");
     const QString WavName("th08_%1.wav");
@@ -89,10 +89,6 @@ namespace {
                 }
                 return ret;
             }
-            uint getUInt32()
-            {
-                return getBits((getBits(2) + 1) << 3);
-            }
             char getChar()
             {
                 return getBits(8);
@@ -110,26 +106,24 @@ namespace {
         QByteArray dict(dict_size, '\0');
         BitReader reader(compressed.data(), compressed.size());
         int dict_cursor = 1;
-        char c;
-        int addr, jump;
         do
         {
             if (reader.getBit())
             {
-                c = reader.getChar();
+                char c = reader.getChar();
                 decompressd.append(c);
                 dict[dict_cursor] = c;
                 dict_cursor = (dict_cursor + 1) % dict_size;
             }
             else
             {
-                addr = reader.getBits(13);
+                int addr = reader.getBits(13);
                 if (addr == 0)
                     return decompressd;
-                jump = reader.getBits(4) + 3;
+                int jump = reader.getBits(4) + 3;
                 for (int i = 0; i < jump; ++i)
                 {
-                    c = dict[addr];
+                    char c = dict[addr];
                     addr = (addr + 1) % dict_size;
                     decompressd.append(c);
                     dict[dict_cursor] = c;
@@ -192,8 +186,6 @@ bool Th08Loader::open(const QString &path)
 
 // PBGX decompresser
     QFile file(dir.filePath(FileName));
-    if (file.size() != 46838629)
-        return false;
     if (!file.open(QIODevice::ReadOnly))
         return false;
 
@@ -282,7 +274,7 @@ bool Th08Loader::open(const QString &path)
     {
         QList<FileInfo> info_list;
         uint cursor = 0;
-        for (int i = 0; i < SongDataSize; ++i)
+        for (uint i = 0; i < SongDataSize; ++i)
         {
             FileInfo info;
             info.name = thbgm_ddata.data() + cursor;
@@ -291,7 +283,7 @@ bool Th08Loader::open(const QString &path)
             cursor += 4;
             info.checksum = getUInt32(thbgm_ddata.data() + cursor);
             cursor += 4;
-            info.loopStart = getUInt32(thbgm_ddata.data() + cursor) >> 2;
+            info.loopBegin = getUInt32(thbgm_ddata.data() + cursor) >> 2;
             cursor += 4;
             info.loopEnd = getUInt32(thbgm_ddata.data() + cursor) >> 2;
             cursor += 4;
@@ -309,8 +301,6 @@ bool Th08Loader::open(const QString &path)
     }
 
     QFile wav(dir.filePath(BgmName));
-    if (wav.size() != 449961024)
-        return false;
     if (!wav.open(QIODevice::ReadOnly))
         return false;
     return true;
@@ -318,24 +308,27 @@ bool Th08Loader::open(const QString &path)
 
 MusicData Th08Loader::at(uint index)
 {
-    Q_ASSERT(0 <= index && index < SongDataSize);
+    Q_ASSERT(index < SongDataSize);
     FileInfo info = info_hash.value(WavName.arg(SongData[index][0]));
-//    qDebug() << info.name << Title;
+    ArchiveMusicData archiveMusicData(dir.absoluteFilePath(BgmName), info.offset, info.offset + info.size);
+    //qDebug() << info.name << Title;
 
     return MusicData(
-        ".wav",
+        info.name,
         SongData[index][1],
         Title,
-        info.size + 44,
+        ".wav",
+        info.size,
         true,
-        info.loopStart,
-        info.loopEnd
+        info.loopBegin,
+        info.loopEnd,
+        &archiveMusicData
     );
 }
 
 QByteArray Th08Loader::content(uint index)
 {
-    Q_ASSERT(0 <= index && index < SongDataSize);
+    Q_ASSERT(index < SongDataSize);
     FileInfo info = info_hash.value(WavName.arg(SongData[index][0]));
     QFile file(dir.filePath(BgmName));
     file.open(QIODevice::ReadOnly);

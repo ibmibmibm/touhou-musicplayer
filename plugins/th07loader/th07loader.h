@@ -27,7 +27,7 @@
 struct FileInfo
 {
     uint offset;
-    uint loopStart;
+    uint loopBegin;
     uint loopEnd;
     uint checksum;
     quint64 size;

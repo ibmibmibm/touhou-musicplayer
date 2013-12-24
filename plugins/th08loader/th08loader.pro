@@ -15,9 +15,10 @@
 TEMPLATE      = lib
 CONFIG       += plugin
 CONFIG       += debug_and_release
-QT           += phonon
 INCLUDEPATH  += ../../include
 DESTDIR       = ../
 
-HEADERS      += ../../include/loaderinterface.h ../../include/musicdata.h th08loader.h
+HEADERS      += ../../include/loaderinterface.h \
+                ../../include/musicdata.h \
+                th08loader.h
 SOURCES      += th08loader.cpp

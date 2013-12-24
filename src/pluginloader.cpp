@@ -70,7 +70,7 @@ void PluginLoader::clear()
     data.clear();
 }
 
-bool PluginLoader::load(QString title, QString path, QString musicdir_path)
+bool PluginLoader::load(QString title, QString path, QString /*musicdir_path*/)
 {
     if (!loader_list_map.contains(title))
         return false;
@@ -83,22 +83,24 @@ bool PluginLoader::load(QString title, QString path, QString musicdir_path)
     for (uint i = 0; i < dataLoader->size(); ++i)
     {
         emit loadProgress(i * 100.0 / dataLoader->size());
-        MusicData m(dataLoader->at(i));
+        MusicData musicData(dataLoader->at(i));
 //        qDebug() << m.title;
+        /*
         QDir musicdir(musicdir_path);
-        musicdir.mkpath(m.album);
-        QDir dir(musicdir.filePath(m.album));
-        m.fileName = dir.absoluteFilePath(m.title + m.suffix);
+        musicdir.mkpath(musicData.album());
+        QDir dir(musicdir.filePath(musicData.album()));
+        musicData.setFileName(dir.absoluteFilePath(musicData.title() + musicData.suffix()));
 
-        QFile file(m.fileName);
-        if (file.size() != m.size)
+        QFile file(musicData.fileName());
+        if (file.size() != musicData.size())
         {
             if (!file.open(QIODevice::WriteOnly))
                 return false;
             file.write(dataLoader->content(i));
             file.close();
         }
-        data << m;
+        */
+        data << musicData;
     }
     dataLoader->close();
     emit loadProgress(100);

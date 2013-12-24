@@ -26,9 +26,13 @@
 
 ConfigDialog::ConfigDialog(const QList<QString>& _plugin_title, QWidget *parent) :
     QDialog(parent),
-    plugin_title(_plugin_title),
-    count(plugin_title.size())
+    plugin_title()
 {
+    /* workaround */
+    for (int i = 0; i < _plugin_title.size(); ++i)
+    {
+        plugin_title << _plugin_title.at(i);
+    }
     setupUi();
 }
 
@@ -53,9 +57,11 @@ void ConfigDialog::chooseDir(int i)
 
 void ConfigDialog::accept()
 {
-    for (int i = 0; i < count; ++i)
+    //qDebug() << Q_FUNC_INFO;
+    for (int i = 0; i < plugin_title.size(); ++i)
     {
         QLineEdit* lineEdit = qobject_cast<QLineEdit *>(dirLayout->itemAtPosition(i + 1, 1)->widget());
+        Q_ASSERT(lineEdit != NULL);
         if (lineEdit->text().size() && !QDir(lineEdit->text()).exists())
         {
             QMessageBox::critical(this, tr("Fatal Error"), tr("This directory does not exist: %1.").arg(lineEdit->text()));
@@ -82,7 +88,7 @@ void ConfigDialog::setupUi()
     }
 
     QSignalMapper *signalMapper = new QSignalMapper(this);
-    for (int i = 0; i < count; ++i)
+    for (int i = 0; i < plugin_title.size(); ++i)
     {
         QPushButton *fileButton = new QPushButton(style()->standardIcon(QStyle::SP_DirOpenIcon), "");
         connect(fileButton, SIGNAL(clicked()), signalMapper, SLOT(map()));

@@ -17,15 +17,8 @@
 #ifndef MUSICPLAYER_H
 #define MUSICPLAYER_H
 
-#include <QObject>
-#include <phonon/phononnamespace.h>
-#include <phonon/audiooutput.h>
-#include <phonon/seekslider.h>
-#include <phonon/mediaobject.h>
-#include <phonon/volumeslider.h>
-#include <phonon/backendcapabilities.h>
-
-#include <portaudio.h>
+#include <QThread>
+#include <QByteArray>
 
 #include "musicfile.h"
 
@@ -46,54 +39,80 @@ enum MusicPlayerErrorType
     FatalError,
 };
 
-class MusicPlayer : public QObject
+struct QueuedMusic
+{
+    QueuedMusic(const MusicData& m, uint l):musicData(m),loop(l){}
+    MusicData musicData;
+    uint loop;
+};
+
+class _MusicPlayerImpl;
+
+class MusicPlayer: public QObject
 {
     Q_OBJECT
 
     public:
+        friend class _MusicPlayerImpl;
         MusicPlayer();
-        void setCurrentMusic(MusicFile musicFile, int loop);
-        void enqueue(const MusicFile & musicFile, int loop);
+        ~MusicPlayer();
+        void setCurrentMusic(MusicData musicData, int loop);
+        void enqueue(const MusicData & musicData, int loop);
         void clearQueue();
-        MusicPlayerState state() const { return static_cast<MusicPlayerState>(mediaObject->state()); }
-        MusicPlayerErrorType errorType() const { return static_cast<MusicPlayerErrorType>(mediaObject->errorType()); }
-        QString errorString() const { return mediaObject->errorString(); }
-        int volume() const { return audioOutput->volume() * 128; }
-        qint64 totalTime() const { return mediaObject->totalTime(); }
-        int remainLoop() const { return totalLoop - currentLoop; }
+        MusicPlayerState state() const { return _state; }
+        MusicPlayerErrorType errorType() const;
+        QString errorString() const;
+        qreal volume() const;
+        qint64 totalSamples() const { return _totalSamples; }
+        uint loop() const { return _loop; }
+        uint totalLoop() const { if (_queue.isEmpty()) return 0; return _queue[0].loop; }
+        uint remainLoop() const { return totalLoop() - loop(); }
     signals:
-        void tick(int samples);
+        void tick(qint64 samples);
         void stateChanged(MusicPlayerState newstate, MusicPlayerState oldstate);
-        void totalSamplesChanged(int newTotalSamples);
+        void totalSamplesChanged(qint64 newTotalSamples);
         void aboutToFinish();
-        void currentMusicChanged(const MusicFile& m);
-        void volumeChanged(int newVolume);
-        void remainLoopChanged(int newRemainLoop);
+        void finish();
+        void currentMusicChanged(const MusicData& m);
+        void volumeChanged(qreal newVolume);
+        void loopChanged(uint newLoop);
     public slots:
-        void play() { mediaObject->play(); }
-        void pause() { mediaObject->pause(); }
-        void stop() { mediaObject->stop(); }
-        void seek(int samples);
-        void setVolume(int newVolume) { audioOutput->setVolume(newVolume * 0.0078125); } // 1/128
+        void play();
+        void pause();
+        void stop();
+        void seek(qint64 samples);
+        void setVolume(qreal newVolume);
+        void setTotalLoop(uint newTotalLoop) { _queue[0].loop = newTotalLoop; }
     private slots:
-        void _setLoop(int newLoop);
-        void _tick(qint64 time);
-        void _stateChanged(Phonon::State newstate, Phonon::State oldstate);
-        void _aboutToFinish();
-        void _currentSourceChanged(const Phonon::MediaSource& source);
-        void _totalTimeChanged(qint64 newTotalTime);
-        void _volumeChanged(qreal newVolume);
+        void _next();
     private:
-        Phonon::MediaObject *mediaObject;
-        Phonon::AudioOutput *audioOutput;
-        QHash<QString, MusicFile> buffer_hash;
-        QList<MusicFile> buffer;
-        QList<int> loop_buffer;
-        MusicFile currentMusic;
-        int tickInterval;
-        int currentLoop;
-        int totalLoop;
-        int fadeoutTime;
+        void _load();
+        void _unload();
+        void _setLoop(uint newLoop);
+        void _setSamples(qint64 newSamples);
+        void _setTotalSamples(qint64 newTotalSamples);
+        void _setState(MusicPlayerState newState);
+        void _fillBuffer(qint64 needSize);
+        qreal _fadeoutVolume(qint64 offset);
+        size_t _samplesToLoop(qint64& samples);
+
+        QList<QueuedMusic> _queue;
+        MusicFile* _file;
+        qint64 _samples;
+        qint64 _totalSamples;
+        MusicPlayerState _state;
+        uint _loop;
+        uint _tickInterval;
+        uint _fadeoutTime;
+        qint64 _fadeoutSamples;
+        bool _musicOver;
+};
+
+class MusicBufferThread : QThread
+{
+    Q_OBJECT
+    protected:
+        void run();
 };
 
 #endif // MUSICPLAYER_H

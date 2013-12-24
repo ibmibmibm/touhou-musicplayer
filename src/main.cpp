@@ -26,7 +26,7 @@ int main(int argv, char **args)
     QApplication app(argv, args);
     app.setOrganizationName("Touhou Music Player");
     app.setApplicationName("Touhou Music Player");
-    app.setApplicationVersion("0.2");
+    app.setApplicationVersion("0.3");
     app.setQuitOnLastWindowClosed(true);
 
     QString locale = QLocale::system().name();

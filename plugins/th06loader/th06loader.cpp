@@ -46,7 +46,7 @@ namespace {
         QString::fromWCharArray(L"\u7d05\u3088\u308a\u511a\u3044\u6c38\u9060"),
         QString::fromWCharArray(L"\u7d05\u697c\u3000\u301c Eastern Dream..."),
     };
-    const int SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
+    const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
     const QString FileName(QString::fromWCharArray(L"\u7d05\u9b54\u90f7MD.DAT"));
     const QString WavName("bgm/th06_%1.wav");
     const QString PosName("th06_%1.pos");
@@ -120,7 +120,7 @@ namespace {
         int dict_cursor = 1;
         char c;
         int addr, jump;
-        do
+        forever
         {
             if (reader.getBit())
             {
@@ -134,7 +134,7 @@ namespace {
             {
                 addr = reader.getBits(13);
                 if (addr == 0)
-                    return reader.getSum();
+                    break;
                 jump = reader.getBits(4) + 3;
                 for (int i = 0; i < jump; ++i)
                 {
@@ -146,7 +146,8 @@ namespace {
                     dict_cursor = (dict_cursor + 1) & 0x1fff;
                 }
             }
-        } while (true);
+        }
+        return reader.getSum();
     }
 }
 
@@ -168,8 +169,6 @@ bool Th06Loader::open(const QString &path)
 
 // PBG3 decompresser
     QFile file(dir.filePath(FileName));
-    if (file.size() != 306003)
-        return false;
     if (!file.open(QIODevice::ReadOnly))
         return false;
 
@@ -226,18 +225,14 @@ bool Th06Loader::open(const QString &path)
             QByteArray cdata(file.read(csize));
             QByteArray ddata(info.size, '\0');
             int checksum = decompress(cdata, ddata);
-            if (checksum != info.checksum)
-            {
-                qDebug() << QString("file %1: checksum error!").arg(info.name);
-            }
-            else
-            {
+            if (checksum == info.checksum)
                 data.insert(info.name, ddata);
-            }
+            else
+                qDebug() << QString("file %1: checksum error!").arg(info.name);
         }
     }
 
-    for (int i = 0; i < SongDataSize; ++i)
+    for (uint i = 0; i < SongDataSize; ++i)
     {
         if (!dir.exists(WavName.arg(i + 1, 2, 10, QLatin1Char('0'))))
         {
@@ -250,30 +245,30 @@ bool Th06Loader::open(const QString &path)
 
 MusicData Th06Loader::at(uint index)
 {
-    Q_ASSERT(0 <= index && index < SongDataSize);
+    Q_ASSERT(index < SongDataSize);
     QString pos = PosName.arg(index + 1, 2, 10, QLatin1Char('0'));
     Q_ASSERT(data.contains(pos));
     const char *d = data.value(pos).data();
-    bool loop = true;
-    uint loopStart = getUInt32(d);
+    uint loopBegin = getUInt32(d);
     uint loopEnd = getUInt32(d + 4);
 
     QFile file(dir.absoluteFilePath(WavName.arg(index + 1, 2, 10, QLatin1Char('0'))));
 
     return MusicData(
-        ".wav",
+        file.fileName(),
         SongData[index],
         Title,
+        ".wav",
         file.size(),
-        loop,
-        loopStart,
+        true,
+        loopBegin,
         loopEnd
     );
 }
 
 QByteArray Th06Loader::content(uint index)
 {
-    Q_ASSERT(0 <= index && index < SongDataSize);
+    Q_ASSERT(index < SongDataSize);
     QFile file(dir.absoluteFilePath(WavName.arg(index + 1, 2, 10, QLatin1Char('0'))));
     file.open(QIODevice::ReadOnly);
 

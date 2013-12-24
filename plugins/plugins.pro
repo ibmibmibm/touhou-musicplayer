@@ -18,4 +18,6 @@ SUBDIRS       = th06loader \
                 th07loader \
                 th08loader \
                 th09loader \
-                th105loader
+                th105loader \
+                th11loader
+

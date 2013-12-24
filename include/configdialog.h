@@ -48,8 +48,7 @@ private:
 
     QGridLayout* dirLayout;
     QDialogButtonBox* buttonBox;
-    const QList<QString> plugin_title;
-    int count;
+    QList<QString> plugin_title;
 };
 
 #endif //CONFIGDIALOG_H

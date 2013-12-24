@@ -19,6 +19,5 @@ INCLUDEPATH  += ../../include
 DESTDIR       = ../
 
 HEADERS      += ../../include/loaderinterface.h \
-                ../../include/musicdata.h \
-                th07loader.h
-SOURCES      += th07loader.cpp
+                ../../include/musicdata.h th11loader.h
+SOURCES      += th11loader.cpp

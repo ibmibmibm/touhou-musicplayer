@@ -49,7 +49,7 @@ namespace {
         QString::fromWCharArray(L"\u6625\u98a8\u306e\u5922"),
         QString::fromWCharArray(L"\u3055\u304f\u3089\u3055\u304f\u3089\u3000\u301c Japanize Dream..."),
     };
-    const int SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
+    const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
     const QString FileName("Th07.dat");
     const QString BgmName("Thbgm.dat");
 
@@ -86,10 +86,6 @@ namespace {
                     mask >>= 1;
                 }
                 return ret;
-            }
-            uint getUInt32()
-            {
-                return getBits((getBits(2) + 1) << 3);
             }
             char getChar()
             {
@@ -158,8 +154,6 @@ bool Th07Loader::open(const QString &path)
 
 // PBG4 decompresser
     QFile file(dir.filePath(FileName));
-    if (file.size() != 23828905)
-        return false;
     if (!file.open(QIODevice::ReadOnly))
         return false;
 
@@ -224,7 +218,7 @@ bool Th07Loader::open(const QString &path)
 // Stage3
     {
         uint cursor = 0;
-        for (int i = 0; i < SongDataSize; ++i)
+        for (uint i = 0; i < SongDataSize; ++i)
         {
             FileInfo info;
             info.name = thbgm_ddata.data() + cursor;
@@ -233,7 +227,7 @@ bool Th07Loader::open(const QString &path)
             cursor += 4;
             info.checksum = getUInt32(thbgm_ddata.data() + cursor);
             cursor += 4;
-            info.loopStart = getUInt32(thbgm_ddata.data() + cursor) >> 2;
+            info.loopBegin = getUInt32(thbgm_ddata.data() + cursor) >> 2;
             cursor += 4;
             info.loopEnd = getUInt32(thbgm_ddata.data() + cursor) >> 2;
             cursor += 4;
@@ -247,8 +241,6 @@ bool Th07Loader::open(const QString &path)
     }
 
     QFile wav(dir.filePath(BgmName));
-    if (wav.size() != 444516656)
-        return false;
     if (!wav.open(QIODevice::ReadOnly))
         return false;
     return true;
@@ -256,23 +248,26 @@ bool Th07Loader::open(const QString &path)
 
 MusicData Th07Loader::at(uint index)
 {
-    Q_ASSERT(0 <= index && index < SongDataSize);
+    Q_ASSERT(index < SongDataSize);
     FileInfo info = info_list.at(index);
+    ArchiveMusicData archiveMusicData(dir.absoluteFilePath(BgmName), info.offset, info.offset + info.size);
 
     return MusicData(
-        ".wav",
+        info.name,
         SongData[index],
         Title,
-        info.size + 44,
+        ".wav",
+        info.size,
         true,
-        info.loopStart,
-        info.loopEnd
+        info.loopBegin,
+        info.loopEnd,
+        &archiveMusicData
     );
 }
 
 QByteArray Th07Loader::content(uint index)
 {
-    Q_ASSERT(0 <= index && index < SongDataSize);
+    Q_ASSERT(index < SongDataSize);
     FileInfo info = info_list.at(index);
     QFile file(dir.filePath(BgmName));
     file.open(QIODevice::ReadOnly);

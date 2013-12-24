@@ -14,5 +14,11 @@
 # along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
 TEMPLATE      = subdirs
 CONFIG       += debug_and_release
-VERSION       = 0.2
+VERSION       = 0.3
 SUBDIRS       = src plugins
+
+win32 {
+    debug {
+        CONFIG += console
+    }
+}

@@ -16,28 +16,99 @@
  */
 #ifndef MUSICDATA_H
 #define MUSICDATA_H
+#include <QSharedData>
+#include <Q_INT64>
 #include <QString>
-#include <QByteArray>
 
-struct MusicData
+struct ArchiveMusicData : public QSharedData
 {
-    MusicData(QString _suffix, QString _title, QString _album, int _size, bool _loop, uint _loopStart, uint _loopEnd) :
-        suffix(_suffix),
-        title(_title),
-        album(_album),
-        size(_size),
-        loop(_loop),
-        loopStart(_loopStart),
-        loopEnd(_loopEnd)
-        {}
-    QString fileName;
-    QString suffix;
-    QString title;
-    QString album;
-    int size;
-    bool loop;
-    uint loopStart;
-    uint loopEnd;
+    typedef char (*Encoder)(void *, char);
+    typedef char (*Decoder)(void *, char);
+    ArchiveMusicData(
+        const QString& archiveFileName_,
+        qint64 dataBegin_,
+        qint64 dataEnd_,
+        Decoder encoder_ = NULL,
+        Decoder decoder_ = NULL,
+        void* userData_ = NULL
+    ) :
+        archiveFileName(archiveFileName_),
+        dataBegin(dataBegin_),
+        dataEnd(dataEnd_),
+        encoder(encoder_),
+        decoder(decoder_),
+        userData(userData_)
+    {
+        Q_ASSERT(dataBegin_ <= dataEnd_);
+    }
+    QString archiveFileName;
+    qint64 dataBegin;
+    qint64 dataEnd;
+    Encoder encoder;
+    Decoder decoder;
+    void* userData;
 };
+
+class MusicData
+{
+    public:
+        MusicData(
+            const QString& fileName,
+            const QString& title,
+            const QString& album,
+            const QString& suffix,
+            qint64 size,
+            bool loop,
+            qint64 loopBegin = 0,
+            qint64 loopEnd = 0,
+            const ArchiveMusicData* archiveMusicData = NULL
+        ) :
+            _fileName(fileName),
+            _title(title),
+            _album(album),
+            _suffix(suffix),
+            _size(size),
+            _loop(loop),
+            _loopBegin(loopBegin),
+            _loopEnd(loopEnd),
+            _archiveMusicData(NULL)
+        {
+            Q_ASSERT(loopBegin <= loopEnd);
+            if (archiveMusicData != NULL)
+            {
+                _archiveMusicData = new ArchiveMusicData(*archiveMusicData);
+            }
+        }
+
+        const QString& fileName() const { return _fileName; }
+        void setFileName(const QString& newFileName) { _fileName = newFileName; }
+        const QString& title() const { return _title; }
+        const QString& album() const { return _album; }
+        const QString& suffix() const { return _suffix; }
+        qint64 size() const { return _size; }
+        bool loop() const { return _loop; }
+        qint64 loopBegin() const { return _loopBegin; }
+        qint64 loopEnd() const { return _loopEnd; }
+        const QExplicitlySharedDataPointer<ArchiveMusicData>& archiveMusicData() const { return _archiveMusicData; }
+        friend bool operator==(const MusicData& left, const MusicData& right);
+    private:
+        QString _fileName;
+        QString _title;
+        QString _album;
+        QString _suffix;
+        qint64 _size;
+        bool _loop;
+        qint64 _loopBegin;
+        qint64 _loopEnd;
+        QExplicitlySharedDataPointer<ArchiveMusicData> _archiveMusicData;
+};
+
+inline bool operator==(const MusicData& left, const MusicData& right)
+{
+    return left._archiveMusicData == right._archiveMusicData
+        && left._fileName == right._fileName
+        && left._title == right._title
+        && left._album == right._album;
+}
 
 #endif // MUSICDATA_H

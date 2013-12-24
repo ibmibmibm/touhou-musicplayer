@@ -16,7 +16,6 @@
  */
 #include <QFile>
 #include <QHash>
-//#include <QtDebug>
 
 #include "th105loader.h"
 #include "helperfuncs.h"
@@ -58,7 +57,7 @@ namespace {
         {"data/bgm/st21", QString::fromWCharArray(L"\u98a8\u795e\u5c11\u5973")},
         {"data/bgm/st22", QString::fromWCharArray(L"\u5f7c\u5cb8\u5e30\u822a \uff5e Riverside View")},
     };
-    const int SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
+    const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
     const QString FileName("th105b.dat");
 
     void maskInit(int mask[0x270], int s)
@@ -148,6 +147,11 @@ namespace {
         for (uint i = 0; i < info.size; i++)
             data[i] ^= mask;
     }
+
+    char decoder(void*p, char c)
+    {
+        return c ^ static_cast<char>(reinterpret_cast<quintptr>(p));
+    }
 }
 
 const QString& Th105Loader::title() const
@@ -168,8 +172,6 @@ bool Th105Loader::open(const QString &path)
 
 // dat file parser
     QFile file(dir.absoluteFilePath(FileName));
-    if (file.size() != 67200123)
-        return false;
     if (!file.open(QIODevice::ReadOnly))
         return false;
 
@@ -215,8 +217,7 @@ bool Th105Loader::open(const QString &path)
         for (int i = 0; i < file_count; ++i)
         {
             FileInfo info;
-            info.loop = false;
-            info.loopStart = info.loopEnd = 0;
+            info.loopBegin = info.loopEnd = 0;
             info.offset = getUInt32(header.data() + cursor);
             cursor += 4;
             info.size = getUInt32(header.data() + cursor);
@@ -233,7 +234,7 @@ bool Th105Loader::open(const QString &path)
         }
     }
 
-    for (int i = 0; i < SongDataSize; ++i)
+    for (uint i = 0; i < SongDataSize; ++i)
     {
         QString ogg = SongData[i][0] + ".ogg";
         if (!info_hash.contains(ogg))
@@ -252,7 +253,6 @@ bool Th105Loader::open(const QString &path)
 
             if (cue.size() > 16 && cue.startsWith("RIFF"))
             {
-                info.loop = true;
                 int cursor = 4;
                 int data_size = getUInt32(cue.data() + cursor) + cursor;
                 cursor += 4;
@@ -273,7 +273,7 @@ bool Th105Loader::open(const QString &path)
                             cursor += 4;
                             Q_ASSERT(getUInt32(cue.data() + cursor) == 1);
                             cursor += 4;
-                            info.loopStart = getUInt32(cue.data() + cursor);
+                            info.loopBegin = getUInt32(cue.data() + cursor);
                             cursor += 4;
                             Q_ASSERT(qstrncmp(cue.data() + cursor, "data", 4) == 0);
                             cursor += 4;
@@ -281,13 +281,13 @@ bool Th105Loader::open(const QString &path)
                             cursor += 4;
                             Q_ASSERT(getUInt32(cue.data() + cursor) == 0);
                             cursor += 4;
-                            Q_ASSERT(getUInt32(cue.data() + cursor) == info.loopStart);
+                            Q_ASSERT(getUInt32(cue.data() + cursor) == info.loopBegin);
                             cursor += 4;
                             Q_ASSERT(cursor == section_end);
                         }
                         else if (qstrncmp(section_title, "LIST", 4) == 0)
                         {
-                            Q_ASSERT(qstrncmp(cue.data(), "adtl", 4) == 0);
+                            Q_ASSERT(qstrncmp(cue.data(), "RIFF", 4) == 0);
                             cursor += 4;
                             while (cursor < section_end)
                             {
@@ -326,9 +326,13 @@ bool Th105Loader::open(const QString &path)
                         }
                     }
                 }
-                //qDebug("start=%u during=%u", loop_start, loop_during);
-                info.loopEnd += info.loopStart;
+                //qDebug("start=%u during=%u", loop_begin, loop_during);
+                info.loopEnd += info.loopBegin;
             }
+        }
+        else // for data/bgm/sr.ogg
+        {
+            info.loopEnd = 3724704 - 44100;
         }
         info_list << info;
     }
@@ -337,23 +341,28 @@ bool Th105Loader::open(const QString &path)
 
 MusicData Th105Loader::at(uint index)
 {
-    Q_ASSERT(0 <= index && index < SongDataSize);
+    Q_ASSERT(index < SongDataSize);
     FileInfo info = info_list[index];
+    ArchiveMusicData archiveMusicData(dir.absoluteFilePath(FileName), info.offset, info.offset + info.size,
+        decoder, decoder, reinterpret_cast<void*>(static_cast<quintptr>(((info.offset >> 1) & 0xff) | 0x23)));
+    //qDebug() << info.name << Title;
 
     return MusicData(
-        ".ogg",
+        SongData[index][0] + ".ogg",
         SongData[index][1],
         Title,
+        ".ogg",
         info.size,
-        info.loop,
-        info.loopStart,
-        info.loopEnd
+        true,
+        info.loopBegin,
+        info.loopEnd,
+        &archiveMusicData
     );
 }
 
 QByteArray Th105Loader::content(uint index)
 {
-    Q_ASSERT(0 <= index && index < SongDataSize);
+    Q_ASSERT(index < SongDataSize);
     FileInfo info = info_list[index];
 
     QFile file(dir.absoluteFilePath(FileName));

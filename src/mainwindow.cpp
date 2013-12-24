@@ -41,10 +41,10 @@ MainWindow::MainWindow()
     pluginLoader = new PluginLoader();
     connect(musicPlayer, SIGNAL(stateChanged(MusicPlayerState, MusicPlayerState)),
             this, SLOT(stateChanged(MusicPlayerState, MusicPlayerState)));
-    connect(musicPlayer, SIGNAL(tick(int)), this, SLOT(tick(int)));
+    connect(musicPlayer, SIGNAL(tick(qint64)), this, SLOT(tick(qint64)));
     connect(musicPlayer, SIGNAL(aboutToFinish()), this, SLOT(aboutToFinish()));
-    connect(musicPlayer, SIGNAL(currentMusicChanged(const MusicFile&)), this, SLOT(currentMusicChanged(const MusicFile&)));
-    connect(musicPlayer, SIGNAL(remainLoopChanged(int)), this, SLOT(remainLoopChanged(int)));
+    connect(musicPlayer, SIGNAL(currentMusicChanged(const MusicData&)), this, SLOT(currentMusicChanged(const MusicData&)));
+    connect(musicPlayer, SIGNAL(loopChanged(uint)), this, SLOT(loopChanged(uint)));
 
     connect(pluginLoader, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
 
@@ -98,9 +98,9 @@ void MainWindow::config()
     }
 }
 
-void MainWindow::insertMusic(const MusicFile& music)
+void MainWindow::insertMusic(const MusicData& musicData)
 {
-    musics << music;
+    musicDataList << musicData;
     int r = musicTable->rowCount();
     musicTable->insertRow(r);
 
@@ -108,11 +108,11 @@ void MainWindow::insertMusic(const MusicFile& music)
     musicTable->setCellWidget(r, 0, spin);
     spin->setValue(2);
 
-    QTableWidgetItem *titleItem = new QTableWidgetItem(music.title());
+    QTableWidgetItem *titleItem = new QTableWidgetItem(musicData.title());
     titleItem->setFlags(titleItem->flags() ^ Qt::ItemIsEditable);
     musicTable->setItem(r, 1, titleItem);
 
-    QTableWidgetItem *albumItem = new QTableWidgetItem(music.album());
+    QTableWidgetItem *albumItem = new QTableWidgetItem(musicData.album());
     albumItem->setFlags(albumItem->flags() ^ Qt::ItemIsEditable);
     musicTable->setItem(r, 2, albumItem);
 
@@ -133,24 +133,24 @@ void MainWindow::loadFile()
         QString path = settings.value("path").toString();
         loadingTitle = title;
 
-        if (!pluginLoader->load(title, path, "music"))
+        if (path.size() && pluginLoader->contains(title) && !pluginLoader->load(title, path, "music"))
             QMessageBox::warning(this, tr("Fatal Error"), tr("%1 is not the installation path of %2.").arg(path).arg(title));
     }
     settings.endArray();
 
     while (musicTable->rowCount() > 0)
         musicTable->removeRow(0);
-    musics.clear();
+    musicDataList.clear();
 
     for (int i = 0; i < pluginLoader->musicSize(); ++i)
-        insertMusic(MusicFile(pluginLoader->musicData(i)));
+        insertMusic(pluginLoader->musicData(i));
 
-    if (musics.size())
+    if (musicDataList.size())
     {
         musicTable->setEnabled(true);
 
         currentIndex = 0;
-        musicPlayer->setCurrentMusic(musics.at(0), qobject_cast<QSpinBox*>(musicTable->cellWidget(0, 0))->value());
+        musicPlayer->setCurrentMusic(musicDataList.at(0), qobject_cast<QSpinBox*>(musicTable->cellWidget(0, 0))->value());
 
         nextAction->setEnabled(true);
         previousAction->setEnabled(true);
@@ -214,18 +214,18 @@ void MainWindow::stateChanged(MusicPlayerState newState, MusicPlayerState /* old
     }
 }
 
-void MainWindow::totalSamplesChanged(int newTotalSamples)
+void MainWindow::totalSamplesChanged(qint64 newTotalSamples)
 {
     seekSlider->setMaximum(newTotalSamples);
 //    qDebug() << newTotalSamples;
 }
 
-void MainWindow::remainLoopChanged(int newRemainLoop)
+void MainWindow::loopChanged(uint newLoop)
 {
-    titleLabel->setText(QString("%1 %2").arg(musics.at(currentIndex).title()).arg(RepeatString(newRemainLoop)));
+    titleLabel->setText(QString("%1 %2").arg(musicDataList.at(currentIndex).title()).arg(RepeatString(musicPlayer->totalLoop() - newLoop)));
 }
 
-void MainWindow::tick(int samples)
+void MainWindow::tick(qint64 samples)
 {
     int time = samples * 0.02267573696145124716553287982 + 0.5;
     int msec = time % 1000;
@@ -238,23 +238,23 @@ void MainWindow::tick(int samples)
     seekSlider->setValue(samples);
 }
 
-void MainWindow::currentMusicChanged(const MusicFile& music)
+void MainWindow::currentMusicChanged(const MusicData& musicData)
 {
-    currentIndex = musics.indexOf(music);
+    currentIndex = musicDataList.indexOf(musicData);
     musicTable->selectRow(currentIndex);
-    titleLabel->setText(QString("%1 %2").arg(musics.at(currentIndex).title()).arg(RepeatString(musicPlayer->remainLoop())));
+    titleLabel->setText(QString("%1 %2").arg(musicDataList.at(currentIndex).title()).arg(RepeatString(musicPlayer->remainLoop())));
     timeLcd->display("00:00.000");
 }
 
 int MainWindow::getNewId(int offset)
 {
-    offset %= musics.size();
+    offset %= musicDataList.size();
     if (offset < 0)
-        offset += musics.size();
+        offset += musicDataList.size();
     int ret = currentIndex;
     do
     {
-        ret = (ret+offset) % musics.size();
+        ret = (ret+offset) % musicDataList.size();
         if (ret == currentIndex)
             break;
     }
@@ -264,9 +264,10 @@ int MainWindow::getNewId(int offset)
 
 void MainWindow::aboutToFinish()
 {
-    Q_ASSERT(musics.size() > currentIndex);
+    qDebug() << Q_FUNC_INFO;
+    Q_ASSERT(musicDataList.size() > currentIndex);
     int next = getNewId(1);
-    musicPlayer->enqueue(musics.at(next), qobject_cast<QSpinBox*>(musicTable->cellWidget(next, 0))->value());
+    musicPlayer->enqueue(musicDataList.at(next), qobject_cast<QSpinBox*>(musicTable->cellWidget(next, 0))->value());
 }
 
 void MainWindow::next()
@@ -286,8 +287,8 @@ void MainWindow::musicChanged(int row, int /*column*/)
     musicPlayer->stop();
     musicPlayer->clearQueue();
 
-    musicPlayer->setCurrentMusic(musics.at(row), qobject_cast<QSpinBox*>(musicTable->cellWidget(row, 0))->value());
-    titleLabel->setText(QString("%1 %2").arg(musics.at(currentIndex).title()).arg(RepeatString(musicPlayer->remainLoop())));
+    musicPlayer->setCurrentMusic(musicDataList.at(row), qobject_cast<QSpinBox*>(musicTable->cellWidget(row, 0))->value());
+    titleLabel->setText(QString("%1 %2").arg(musicDataList.at(currentIndex).title()).arg(RepeatString(musicPlayer->remainLoop())));
 
     if (wasPlaying)
         musicPlayer->play();
@@ -371,15 +372,15 @@ void MainWindow::setupUi()
     bar->addAction(nextAction);
 
     seekSlider = new QSlider(Qt::Horizontal, this);
-    connect(musicPlayer, SIGNAL(totalSamplesChanged(int)), this, SLOT(totalSamplesChanged(int)));
-    connect(seekSlider, SIGNAL(sliderMoved(int)), musicPlayer, SLOT(seek(int)));
+    connect(musicPlayer, SIGNAL(totalSamplesChanged(qint64)), this, SLOT(totalSamplesChanged(qint64)));
+    connect(seekSlider, SIGNAL(sliderMoved(int)), this, SLOT(seek(int)));
 
     volumeSlider = new QSlider(Qt::Horizontal, this);
     volumeSlider->setMaximum(128);
     volumeSlider->setValue(128);
     volumeSlider->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
-    connect(volumeSlider, SIGNAL(valueChanged(int)), musicPlayer, SLOT(setVolume(int)));
-    connect(musicPlayer, SIGNAL(volumeChanged(int)), volumeSlider, SLOT(setValue(int)));
+    connect(volumeSlider, SIGNAL(valueChanged(int)), this, SLOT(setVolume(int)));
+    connect(musicPlayer, SIGNAL(volumeChanged(qreal)), this, SLOT(setVolume(qreal)));
 
     titleLabel = new QLabel(this);
 

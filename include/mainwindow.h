@@ -30,7 +30,7 @@
 #include "pluginloader.h"
 #include "musicplayer.h"
 #include "configdialog.h"
-#include "musicfile.h"
+#include "musicdata.h"
 
 class MainWindow : public QMainWindow
 {
@@ -46,7 +46,7 @@ class MainWindow : public QMainWindow
 
     protected:
         void closeEvent(QCloseEvent *event);
- 
+
     private slots:
         void loadFile();
         void config();
@@ -55,15 +55,18 @@ class MainWindow : public QMainWindow
         void previous();
         void loadProgress(int);
         void stateChanged(MusicPlayerState newState, MusicPlayerState oldState);
-        void totalSamplesChanged(int newTotalSamples);
-        void remainLoopChanged(int newRemainLoop);
-        void tick(int sample);
-        void currentMusicChanged(const MusicFile& file);
+        void totalSamplesChanged(qint64 newTotalSamples);
+        void loopChanged(uint newLoop);
+        void tick(qint64 sample);
+        void currentMusicChanged(const MusicData& musicData);
         void aboutToFinish();
         void musicChanged(int row, int = 0);
+        void seek(int newValue) { musicPlayer->seek(newValue); }
+        void setVolume(int newVolume) { musicPlayer->setVolume(newVolume * 0.01); }
+        void setVolume(qreal newVolume) { volumeSlider->setValue(newVolume * 100.0); }
 
     private:
-        void insertMusic(const MusicFile& music);
+        void insertMusic(const MusicData& musicData);
         int getNewId(int offset);
         void setupActions();
         void setupMenus();
@@ -73,7 +76,7 @@ class MainWindow : public QMainWindow
         QSlider *volumeSlider;
         QLabel *titleLabel;
         QTableWidget *musicTable;
-        QList<MusicFile> musics;
+        QList<MusicData> musicDataList;
         int currentIndex;
 
         PluginLoader *pluginLoader;

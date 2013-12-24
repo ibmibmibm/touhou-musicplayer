@@ -16,66 +16,89 @@
  */
 #ifndef MUSICFILE_H
 #define MUSICFILE_H
-#include <QApplication>
-#include <QFile>
-#include <QDir>
+#include <QIODevice>
+#include <QFSFileEngine>
 #include <QString>
-#include <QByteArray>
-#include <QExplicitlySharedDataPointer>
-#include <phonon/mediaobject.h>
+#include <QtDebug>
 #include "musicdata.h"
 
-class MusicFile
+class MusicFile : public QIODevice
 {
-    private:
-        class MusicFileData : public QSharedData
-        {
-            private:
-                MusicFileData(const MusicFileData &other);
-                MusicFileData&operator=(const MusicFileData &other);
-            public:
-                MusicFileData():
-                    title(),
-                    album(),
-                    fileName(),
-                    loop(false),
-                    loopStart(0),
-                    loopEnd(0)
-                {}
-                MusicFileData(const MusicData& data):
-                    title(data.title),
-                    album(data.album),
-                    fileName(data.fileName),
-                    loop(data.loop),
-                    loopStart(data.loopStart),
-                    loopEnd(data.loopEnd)
-                {}
-                QString title;
-                QString album;
-                QString fileName;
-                bool loop;
-                uint loopStart;
-                uint loopEnd;
-        };
+    Q_OBJECT
+
+/* outer layer */
     public:
-        MusicFile() :
-            data(new MusicFileData())
-        {}
-        MusicFile(const MusicData& data) :
-            data(new MusicFileData(data))
-            {}
-        bool isLoop() const { return this->data->loop; }
-        uint loopStart() const { return this->data->loopStart; }
-        uint loopEnd() const { return this->data->loopEnd; }
-        const QString& title() const { return this->data->title; }
-        void setTitle(const QString& title) { this->data->title = title; }
-        const QString& album() const { return this->data->album; }
-        void setAlbum(const QString& album) { this->data->album = album; }
-        const QString& fileName() const { return this->data->fileName; }
-        void setFileName(const QString& fileName) { this->data->fileName = fileName; }
-        bool operator==(const MusicFile& right) { return data == right.data; }
+        typedef QFile::OpenMode OpenMode;
+
+        MusicFile();
+        MusicFile(const QString& fileName);
+        MusicFile(const MusicData& fileDescription);
+        virtual ~MusicFile() {}
+
+        const QString& fileName() const;
+        void setFileName(const QString& fileName);
+        void setFileDescription(const MusicData& fileDescription);
+
+        qint64 loopBegin() const { return _loopBegin; }
+        void setLoopStart(qint64 newLoopStart) { _loopBegin = newLoopStart; }
+        qint64 loopEnd() const { return _loopEnd; }
+        void setLoopEnd(qint64 newLoopEnd) { _loopEnd = newLoopEnd; }
+        QString title() const { return _title; }
+        void setTitle(QString newTitle) { _title = newTitle; }
+        QString album() const { return _album; }
+        void setAlbum(QString newAlbum) { _album = newAlbum; }
+
+        virtual bool open(OpenMode mode);
+        virtual qint64 pos() const;
+        virtual qint64 size() const;
+        virtual bool seek(qint64 pos);
+        virtual bool reset();
+        virtual qint64 bytesAvailable() const { return size(); }
+
+        qint64 samplePos() const { return pos() * _blockwidth; }
+        qint64 sampleSize() const { return size() * _blockwidth; }
+        bool sampleSeek(qint64 pos) { return seek(pos * _blockwidth); }
+        qint64 sampleRead(char* buffer, qint64 maxSize) { return read(buffer, maxSize * _blockwidth) / _blockwidth; }
+
+        uint channels() const { return _channels; }
+        uint samplerate() const { return _samplerate; }
+        uint bytewidth() const { return _bytewidth; }
+        uint blockwidth() const { return _blockwidth; }
+
+
+/* middle layer */
+    protected:
+        virtual qint64 readData(char* data, qint64 maxSize);
+        virtual qint64 writeData(const char* data, qint64 maxSize);
+        void setErrorString(const QString & str);
+        void setOpenMode(OpenMode openMode);
+
+        uint _channels;
+        uint _samplerate;
+        uint _bytewidth;
+        uint _blockwidth;
+
+        bool _loop;
+        qint64 _loopBegin;
+        qint64 _loopEnd;
+        QString _title;
+        QString _album;
+        QExplicitlySharedDataPointer<ArchiveMusicData> _archiveMusicData;
+
+
+/* inner layer */
+        qint64 _pos() const;
+        qint64 _size() const;
+        bool _seek(qint64 pos);
+        bool _reset();
+        qint64 _readData(char* data, qint64 maxSize);
+        qint64 _writeData(const char* data, qint64 maxSize);
+
     private:
-        QExplicitlySharedDataPointer<MusicFileData> data;
+        QString _fileName;
+        QAbstractFileEngine* _fileEngine;
+        MusicFile(const MusicFile&);
+        MusicFile& operator=(const MusicFile&);
 };
 
-#endif //MUSICFILE_H
+#endif // MUSICFILE_H
