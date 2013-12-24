@@ -1,0 +1,16 @@
+#index {
+	position: fixed;
+	width: 200px;
+}
+
+#index h2 {
+	display: none;
+}
+
+#index li {
+	list-style-type: none;
+}
+
+#body {
+	margin-left: 220px;
+}
