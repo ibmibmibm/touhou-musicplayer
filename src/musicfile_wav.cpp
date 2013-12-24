@@ -17,12 +17,6 @@
 #include <QtEndian>
 #include "musicfile_wav.h"
 
-#if Q_BYTE_ORDER == Q_BIG_ENDIAN
-    #define MAKE_MARKER(a,b,c,d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
-#elif Q_BYTE_ORDER == Q_LITTLE_ENDIAN
-    #define MAKE_MARKER(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
-#endif
-
 template <typename T>
 inline T FromEndian(MusicFile_Wav::_Endian endian, T value)
 {
@@ -49,6 +43,12 @@ bool MusicFile_Wav::_parseHeader()
         HAVE_other = 0x80000000,
     };
 
+#if Q_BYTE_ORDER == Q_BIG_ENDIAN
+    #define MAKE_MARKER(a,b,c,d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
+#elif Q_BYTE_ORDER == Q_LITTLE_ENDIAN
+    #define MAKE_MARKER(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
+#endif
+
     enum
     {
         RIFF_MARKER = MAKE_MARKER('R','I','F','F'),
@@ -57,7 +57,10 @@ bool MusicFile_Wav::_parseHeader()
         fmt_MARKER  = MAKE_MARKER('f','m','t',' '),
         data_MARKER = MAKE_MARKER('d','a','t','a'),
         LIST_MARKER = MAKE_MARKER('L','I','S','T'),
+        cue_MARKER  = MAKE_MARKER('c','u','e',' '),
     };
+
+#undef MAKE_MARKER
 
     enum
     {
@@ -158,7 +161,7 @@ bool MusicFile_Wav::_parseHeader()
                 if (MusicFile::read(reinterpret_cast<char*>(&int16), sizeof(int16)) != sizeof(int16))
                     return false;
                 _bitwidth = FromEndian(_endian, int16);
-                _bytewidth = (_bitwidth + 7) / 8;
+                _bytewidth = (_bitwidth + 7) >> 3;
                 //qDebug() << "_bytewidth" << _bytewidth;
 
                 if (_format == WAVE_FORMAT_PCM && _bitwidth == 24 && _blockalign == 4 * _channels)
@@ -205,7 +208,8 @@ bool MusicFile_Wav::_parseHeader()
                 break;
 
             case LIST_MARKER:
-                //qDebug() << "LIST_MARKER";
+            case cue_MARKER:
+                //qDebug() << "LIST_MARKER | cue_MARKER";
                 parsestage |= HAVE_other;
                 if (MusicFile::read(reinterpret_cast<char*>(&chunk_size), sizeof(chunk_size)) != sizeof(chunk_size))
                     return false;
@@ -250,7 +254,7 @@ MusicFile_Wav::MusicFile_Wav(const MusicData& fileDescription) :
     _dataSize(0),
     _dataEnd(0)
 {
-    qDebug() << Q_FUNC_INFO << MusicFile::fileName();
+    //qDebug() << Q_FUNC_INFO << MusicFile::fileName();
 }
 
 bool MusicFile_Wav::open(OpenMode mode)
@@ -292,7 +296,7 @@ qint64 MusicFile_Wav::size() const
 
 bool MusicFile_Wav::seek(qint64 pos)
 {
-    qDebug() << Q_FUNC_INFO << pos;
+    //qDebug() << Q_FUNC_INFO << pos;
     return MusicFile::seek(pos + _dataBegin);
 }
 
@@ -313,12 +317,12 @@ qint64 MusicFile_Wav::readData(char* data, qint64 maxSize)
     //qDebug() << Q_FUNC_INFO << MusicFile::pos();
     if (MusicFile::pos() < _dataBegin)
     {
-        qDebug() << Q_FUNC_INFO << "MusicFile::pos() < _dataBegin" << _dataBegin;
+        //qDebug() << Q_FUNC_INFO << "MusicFile::pos() < _dataBegin" << _dataBegin;
         MusicFile::seek(_dataBegin);
     }
     if (MusicFile::pos() > _dataEnd)
     {
-        qDebug() << Q_FUNC_INFO << "MusicFile::pos() > _dataEnd" << _dataEnd;
+        //qDebug() << Q_FUNC_INFO << "MusicFile::pos() > _dataEnd" << _dataEnd;
         MusicFile::seek(_dataEnd);
     }
     //qDebug() << Q_FUNC_INFO << MusicFile::pos();

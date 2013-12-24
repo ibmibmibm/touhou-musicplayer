@@ -14,31 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TH06LOADER_H
-#define TH06LOADER_H
-#include <QObject>
-#include <QString>
-#include <QHash>
-#include <QDir>
-#include <QByteArray>
-#include "loaderinterface.h"
+#include "musicsaver.h"
 
-class Th06Loader : public QObject, public LoaderInterface
+qreal MusicSaver::fadeoutVolume(quint64 fadeoutSample, quint64 sample)
 {
-    Q_OBJECT
-    Q_INTERFACES(LoaderInterface)
-
-    public:
-        Th06Loader() {}
-        const QString& title() const;
-        bool open(const QString &);
-        void close();
-        MusicData at(uint index);
-        QByteArray content(uint index);
-        uint size() const;
-    private:
-        QHash<QString, QByteArray> data;
-        QDir dir;
-};
-
-#endif //TH06LOADER_H
+    qreal ret = static_cast<qreal>(fadeoutSample - sample) / static_cast<qreal>(fadeoutSample);
+    return ret * ret;
+}

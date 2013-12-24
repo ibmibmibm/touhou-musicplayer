@@ -21,5 +21,5 @@ DESTDIR       = ..
 HEADERS      += ../../include/loaderinterface.h \
                 ../../include/helperfuncs.h \
                 ../../include/musicdata.h \
-                th105loader.h
-SOURCES      += th105loader.cpp
+                th095loader.h
+SOURCES      += th095loader.cpp

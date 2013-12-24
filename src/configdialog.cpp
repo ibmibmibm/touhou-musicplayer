@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <QLineEdit>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QGroupBox>
@@ -22,57 +21,13 @@
 #include <QSignalMapper>
 #include <QStyle>
 #include <QPushButton>
+#include <QSettings>
+#include <QtDebug>
 #include "configdialog.h"
 
-ConfigDialog::ConfigDialog(const QList<QString>& _plugin_title, QWidget *parent) :
-    QDialog(parent),
-    plugin_title()
-{
-    /* workaround */
-    for (int i = 0; i < _plugin_title.size(); ++i)
-    {
-        plugin_title << _plugin_title.at(i);
-    }
-    setupUi();
-}
-
-const QString ConfigDialog::dir(int i) const
-{
-    return qobject_cast<QLineEdit *>(dirLayout->itemAtPosition(i + 1, 1)->widget())->text();
-}
-
-void ConfigDialog::setDir(int i, const QString& path)
-{
-    qobject_cast<QLineEdit *>(dirLayout->itemAtPosition(i + 1, 1)->widget())->setText(path);
-}
-
-void ConfigDialog::chooseDir(int i)
-{
-    QString path = QFileDialog::getExistingDirectory(this, tr("Choose the installation path of the program..."));
-    if (path.size())
-    {
-        setDir(i, path);
-    }
-}
-
-void ConfigDialog::accept()
-{
-    //qDebug() << Q_FUNC_INFO;
-    for (int i = 0; i < plugin_title.size(); ++i)
-    {
-        QLineEdit* lineEdit = qobject_cast<QLineEdit *>(dirLayout->itemAtPosition(i + 1, 1)->widget());
-        Q_ASSERT(lineEdit != NULL);
-        if (lineEdit->text().size() && !QDir(lineEdit->text()).exists())
-        {
-            QMessageBox::critical(this, tr("Fatal Error"), tr("This directory does not exist: %1.").arg(lineEdit->text()));
-            lineEdit->setFocus();
-            return;
-        }
-    }
-    QDialog::accept();
-}
-
-void ConfigDialog::setupUi()
+GeneralConfigTab::GeneralConfigTab(int pluginCount_, QWidget *parent) :
+    QWidget(parent),
+    pluginCount(pluginCount_)
 {
     QGroupBox *dirGroupBox = new QGroupBox(tr("Programs' Directory"));
 
@@ -88,27 +43,172 @@ void ConfigDialog::setupUi()
     }
 
     QSignalMapper *signalMapper = new QSignalMapper(this);
-    for (int i = 0; i < plugin_title.size(); ++i)
+    for (int i = 0; i < pluginCount; ++i)
     {
         QPushButton *fileButton = new QPushButton(style()->standardIcon(QStyle::SP_DirOpenIcon), "");
         connect(fileButton, SIGNAL(clicked()), signalMapper, SLOT(map()));
         signalMapper->setMapping(fileButton, i);
 
-        dirLayout->addWidget(new QLabel(plugin_title.at(i)), i + 1, 0);
+        dirLayout->addWidget(new QLabel(), i + 1, 0);
         dirLayout->addWidget(new QLineEdit(), i + 1, 1);
         dirLayout->addWidget(fileButton, i + 1, 2);
     }
     connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(chooseDir(int)));
 
-    buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    dirGroupBox->setLayout(dirLayout);
+
+    loadCheckBox = new QCheckBox(tr("Load data files on startup."));
+
+    QVBoxLayout *mainLayout = new QVBoxLayout();
+    mainLayout->addWidget(dirGroupBox);
+    mainLayout->addWidget(loadCheckBox);
+    mainLayout->addStretch(1);
+
+    this->setLayout(mainLayout);
+}
+
+void GeneralConfigTab::chooseDir(int i)
+{
+    QString path = QFileDialog::getExistingDirectory(this, tr("Choose the installation path of the program..."));
+    if (path.size() != 0)
+    {
+        setPluginDir(i, path);
+    }
+}
+
+bool GeneralConfigTab::checkValues()
+{
+    for (int i = 0; i < pluginCount; ++i)
+    {
+        QLineEdit* lineEdit(qobject_cast<QLineEdit*>(dirLayout->itemAtPosition(i + 1, 1)->widget()));
+        const QString& dir(lineEdit->text());
+        if (dir.size() && !QDir(dir).exists())
+        {
+            QMessageBox::critical(this, tr("Fatal Error"), tr("This directory does not exist: %1.").arg(dir));
+            lineEdit->setFocus();
+            return false;
+        }
+    }
+    return true;
+}
+
+
+
+PlaybackConfigTab::PlaybackConfigTab(QWidget *parent) :
+    QWidget(parent)
+{
+    deviceComboBox = new QComboBox();
+    deviceComboBox->setEditable(false);
+
+    QHBoxLayout *bufferLayout = new QHBoxLayout();
+    bufferLayout->addWidget(new QLabel(tr("Output Device")));
+    bufferLayout->addWidget(deviceComboBox, 1);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout();
+    mainLayout->addLayout(bufferLayout);
+    mainLayout->addStretch(1);
+
+    this->setLayout(mainLayout);
+}
+
+bool PlaybackConfigTab::checkValues()
+{
+    return true;
+}
+
+
+
+ConfigDialog::ConfigDialog(const PluginLoader *const _pluginLoader, const MusicPlayer *const _musicPlayer, QWidget *parent) :
+    QDialog(parent),
+    pluginLoader(_pluginLoader),
+    musicPlayer(_musicPlayer)
+{
+    setupUi();
+    loadSettings();
+}
+
+void ConfigDialog::accept()
+{
+    //qDebug() << Q_FUNC_INFO;
+    if (!generalConfigTab->checkValues())
+    {
+        tabWidget->setCurrentWidget(generalConfigTab);
+        return;
+    }
+    if (!playbackConfigTab->checkValues())
+    {
+        tabWidget->setCurrentWidget(playbackConfigTab);
+        return;
+    }
+    saveSettings();
+    QDialog::accept();
+}
+
+void ConfigDialog::loadSettings()
+{
+    QSettings settings;
+    settings.beginGroup("General");
+    int size = settings.beginReadArray("Applications Directory");
+    for (int i = 0; i < size; ++i)
+    {
+        settings.setArrayIndex(i);
+        QString title = settings.value("Title").toString();
+        QString path = settings.value("Path").toString();
+        if (pluginLoader->contains(title))
+        {
+            int id = pluginLoader->id(title);
+            generalConfigTab->setPluginDir(id, path);
+        }
+    }
+    settings.endArray();
+    generalConfigTab->setLoadOnStartup(settings.value("Load On Startup").toBool());
+    settings.endGroup();
+
+    settings.beginGroup("Playback");
+    playbackConfigTab->setDevice(settings.value("Output Device", static_cast<int>(musicPlayer->defaultDevice())).toInt());
+    settings.endGroup();
+}
+
+void ConfigDialog::saveSettings()
+{
+    QSettings settings;
+    settings.beginGroup("General");
+    settings.beginWriteArray("Applications Directory");
+    for (int i = 0; i < pluginLoader->size(); ++i)
+    {
+        settings.setArrayIndex(i);
+        settings.setValue("Title", pluginLoader->title(i));
+        settings.setValue("Path", generalConfigTab->pluginDir(i));
+    }
+    settings.endArray();
+    settings.setValue("Load On Startup", generalConfigTab->loadOnStartup());
+    settings.endGroup();
+
+    settings.beginGroup("Playback");
+    settings.setValue("Output Device", playbackConfigTab->device());
+    settings.endGroup();
+}
+
+void ConfigDialog::setupUi()
+{
+    generalConfigTab = new GeneralConfigTab(pluginLoader->size());
+    for (int i = 0; i < pluginLoader->size(); ++i)
+        generalConfigTab->setPluginTitle(i, pluginLoader->title(i));
+
+    playbackConfigTab = new PlaybackConfigTab();
+    for (int i = 0; i < musicPlayer->deviceCount(); ++i)
+        playbackConfigTab->addDevice(musicPlayer->device(i));
+
+    tabWidget = new QTabWidget();
+    tabWidget->addTab(generalConfigTab, tr("General"));
+    tabWidget->addTab(playbackConfigTab, tr("Playback"));
+
+    buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal);
     connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
 
-    dirGroupBox->setLayout(dirLayout);
-
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addWidget(dirGroupBox);
-    mainLayout->addStretch(1);
+    QVBoxLayout *mainLayout = new QVBoxLayout();
+    mainLayout->addWidget(tabWidget, 1);
     mainLayout->addWidget(buttonBox);
 
     this->setLayout(mainLayout);

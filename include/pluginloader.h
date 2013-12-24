@@ -30,16 +30,13 @@ class PluginLoader : public QObject
     public:
         PluginLoader();
         void clear();
-        bool load(QString title, QString path, QString musicdir);
+        bool load(QString title, QString path);
         bool contains(QString title) const { return loader_list_map.contains(title); }
         int id(QString title) const { return loader_list_map.value(title); }
         QString title(int id) const { return loader_list.at(id)->title(); }
-        QList<QString> title() const;
         int size() const { return loader_list.size(); }
         int musicSize() const { return data.size(); }
         const MusicData& musicData(int idx) const { return data.at(idx); }
-    signals:
-        void loadProgress(int progress);
     private:
         QList<LoaderInterface*> loader_list;
         QHash<QString, int> loader_list_map;

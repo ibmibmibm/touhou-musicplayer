@@ -20,35 +20,75 @@
 #include <QDialog>
 #include <QList>
 #include <QSize>
-#include <QGridLayout>
+#include <QTabWidget>
 #include <QDialogButtonBox>
-#include <QtDebug>
+#include <QGridLayout>
+#include <QCheckBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QComboBox>
+#include "pluginloader.h"
+#include "musicplayer.h"
+
+class GeneralConfigTab : public QWidget
+{
+    Q_OBJECT
+    public:
+        GeneralConfigTab(int pluginCount_, QWidget *parent = 0);
+        QString pluginTitle(int id) const { return qobject_cast<QLabel *>(dirLayout->itemAtPosition(id + 1, 0)->widget())->text(); }
+        void setPluginTitle(int id, const QString& dir) { qobject_cast<QLabel *>(dirLayout->itemAtPosition(id + 1, 0)->widget())->setText(dir); }
+        QString pluginDir(int id) const { return qobject_cast<QLineEdit *>(dirLayout->itemAtPosition(id + 1, 1)->widget())->text(); }
+        void setPluginDir(int id, const QString& dir) { qobject_cast<QLineEdit *>(dirLayout->itemAtPosition(id + 1, 1)->widget())->setText(dir); }
+        bool loadOnStartup() const { return loadCheckBox->isChecked(); }
+        void setLoadOnStartup(bool value) { return loadCheckBox->setChecked(value); }
+        bool checkValues();
+    public slots:
+        void chooseDir(int id);
+    private:
+        int pluginCount;
+        QGridLayout* dirLayout;
+        QCheckBox* loadCheckBox;
+};
+
+class PlaybackConfigTab : public QWidget
+{
+    Q_OBJECT
+    public:
+        PlaybackConfigTab(QWidget *parent = 0);
+        void addDevice(const QString& name) { deviceComboBox->addItem(name); }
+        int device() const { return deviceComboBox->currentIndex(); }
+        void setDevice(int id) { deviceComboBox->setCurrentIndex(id); }
+        bool checkValues();
+    private:
+        QComboBox* deviceComboBox;
+};
 
 class ConfigDialog : public QDialog
 {
     Q_OBJECT
 
-public:
-    ConfigDialog(const QList<QString>& plugin_title, QWidget *parent = 0);
-    ~ConfigDialog() {}
+    public:
+        ConfigDialog(const PluginLoader *const _pluginLoader, const MusicPlayer *const _musicPlayer, QWidget *parent = 0);
+        ~ConfigDialog() {}
 
-    QSize sizeHint() const {
-        return QSize(600, 300);
-    }
+        QSize sizeHint() const {
+            return QSize(600, 300);
+        }
 
-    const QString dir(int i) const;
-    void setDir(int i, const QString& dir);
+    public slots:
+        virtual void accept();
 
-public slots:
-    void chooseDir(int i);
-    virtual void accept();
+    private:
+        void setupUi();
+        void loadSettings();
+        void saveSettings();
 
-private:
-    void setupUi();
-
-    QGridLayout* dirLayout;
-    QDialogButtonBox* buttonBox;
-    QList<QString> plugin_title;
+        const PluginLoader *const pluginLoader;
+        const MusicPlayer *const musicPlayer;
+        GeneralConfigTab* generalConfigTab;
+        PlaybackConfigTab* playbackConfigTab;
+        QTabWidget* tabWidget;
+        QDialogButtonBox* buttonBox;
 };
 
 #endif //CONFIGDIALOG_H

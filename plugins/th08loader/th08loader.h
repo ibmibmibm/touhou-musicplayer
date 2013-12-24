@@ -18,7 +18,6 @@
 #define TH06LOADER_H
 #include <QObject>
 #include <QString>
-#include <QList>
 #include <QHash>
 #include <QDir>
 #include <QByteArray>

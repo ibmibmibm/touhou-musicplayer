@@ -12,13 +12,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
+
 TEMPLATE      = subdirs
 CONFIG       += debug_and_release
-VERSION       = 0.3
 SUBDIRS       = src plugins
 
-win32 {
-    debug {
-        CONFIG += console
-    }
-}
+include(translations/translations.pri)
+

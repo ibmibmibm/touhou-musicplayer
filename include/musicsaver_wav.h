@@ -14,42 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TH06LOADER_H
-#define TH06LOADER_H
-#include <QObject>
-#include <QString>
-#include <QList>
-#include <QDir>
-#include <QByteArray>
-#include "loaderinterface.h"
+#ifndef MUSICSAVER_WAV_H
+#define MUSICSAVER_WAV_H
+#include "musicsaver.h"
 
-struct FileInfo
+class MusicSaver_Wav : public MusicSaver
 {
-    uint offset;
-    uint loopBegin;
-    uint loopEnd;
-    uint checksum;
-    quint64 size;
-    QString name;
-    QByteArray header;
-};
-
-class Th07Loader : public QObject, public LoaderInterface
-{
-    Q_OBJECT
-    Q_INTERFACES(LoaderInterface)
-
     public:
-        Th07Loader() {}
-        const QString& title() const;
-        bool open(const QString &);
-        void close();
-        MusicData at(uint index);
-        QByteArray content(uint index);
-        uint size() const;
-    private:
-        QList<FileInfo> info_list;
-        QDir dir;
+        static QString filterString() { return QObject::tr("Uncompressed PCM (*.wav)"); }
+        virtual bool save(const QString& filename, MusicData musicData, uint loop, uint fadeoutTime);
 };
 
-#endif //TH06LOADER_H
+#endif // MUSICSAVER_WAV_H

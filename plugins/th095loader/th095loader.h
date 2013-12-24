@@ -34,13 +34,13 @@ struct FileInfo
     QByteArray header;
 };
 
-class Th11Loader : public QObject, public LoaderInterface
+class Th095Loader : public QObject, public LoaderInterface
 {
     Q_OBJECT
     Q_INTERFACES(LoaderInterface)
 
     public:
-        Th11Loader() {}
+        Th095Loader() {}
         const QString& title() const;
         bool open(const QString &);
         void close();

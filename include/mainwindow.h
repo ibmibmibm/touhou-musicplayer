@@ -49,11 +49,11 @@ class MainWindow : public QMainWindow
 
     private slots:
         void loadFile();
+        void saveFile();
         void config();
         void about();
         void next();
         void previous();
-        void loadProgress(int);
         void stateChanged(MusicPlayerState newState, MusicPlayerState oldState);
         void totalSamplesChanged(qint64 newTotalSamples);
         void loopChanged(uint newLoop);
@@ -89,12 +89,12 @@ class MainWindow : public QMainWindow
         QAction *nextAction;
         QAction *previousAction;
         QAction *loadFileAction;
+        QAction *saveFileAction;
         QAction *exitAction;
         QAction *configAction;
         QAction *aboutAction;
         QAction *aboutQtAction;
         QLCDNumber *timeLcd;
-        ConfigDialog *configDialog;
 };
 
 #endif //MAINWINDOW_H

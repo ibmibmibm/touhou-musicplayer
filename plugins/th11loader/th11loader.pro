@@ -16,8 +16,10 @@ TEMPLATE      = lib
 CONFIG       += plugin
 CONFIG       += debug_and_release
 INCLUDEPATH  += ../../include
-DESTDIR       = ../
+DESTDIR       = ..
 
 HEADERS      += ../../include/loaderinterface.h \
-                ../../include/musicdata.h th11loader.h
+                ../../include/helperfuncs.h \
+                ../../include/musicdata.h \
+                th11loader.h
 SOURCES      += th11loader.cpp

@@ -17,8 +17,7 @@
 #include <QDir>
 #include <QFile>
 #include <QList>
-#include <QtDebug>
-#include <QMessageBox>
+#include <QFileInfo>
 
 #include "th07loader.h"
 #include "helperfuncs.h"
@@ -52,88 +51,6 @@ namespace {
     const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
     const QString FileName("Th07.dat");
     const QString BgmName("Thbgm.dat");
-
-    class BitReader
-    {
-        public:
-            BitReader(const char*const _data, const int _size) :
-                pos(0),
-                bitPos(0x80),
-                size(_size),
-                data(_data)
-            {}
-            bool getBit()
-            {
-                if (pos >= size)
-                    return false;
-                bool ret = (static_cast<unsigned char>(data[pos]) & bitPos);
-                bitPos >>= 1;
-                if (!bitPos)
-                {
-                    ++pos;
-                    bitPos = 0x80;
-                }
-                return ret;
-            }
-            uint getBits(int len)
-            {
-                uint ret = 0;
-                uint mask = 1 << --len;
-                for (int i = 0; i <= len; ++i)
-                {
-                    if (getBit())
-                        ret |= mask;
-                    mask >>= 1;
-                }
-                return ret;
-            }
-            char getChar()
-            {
-                return getBits(8);
-            }
-        private:
-            uint pos;
-            quint8 bitPos;
-            const uint size;
-            const char*const data;
-    };
-
-    void decompress(const QByteArray& compressed, QByteArray& decompressd)
-    {
-        QByteArray dict(0x2000, '\0');
-        BitReader reader(compressed.data(), compressed.size());
-        int cursor = 0;
-        int dict_cursor = 1;
-        char c;
-        int addr, jump;
-        do
-        {
-            if (reader.getBit())
-            {
-                c = reader.getChar();
-                decompressd[cursor] = c;
-                ++cursor;
-                dict[dict_cursor] = c;
-                dict_cursor = (dict_cursor + 1) & 0x1fff;
-            }
-            else
-            {
-                addr = reader.getBits(13);
-                if (addr == 0)
-                    return;
-                jump = reader.getBits(4) + 3;
-                for (int i = 0; i < jump; ++i)
-                {
-                    c = dict[addr];
-                    addr = (addr + 1) & 0x1fff;
-                    decompressd[cursor] = c;
-                    ++cursor;
-                    dict[dict_cursor] = c;
-                    dict_cursor = (dict_cursor + 1) & 0x1fff;
-                }
-            }
-        } while (true);
-    }
 }
 
 const QString& Th07Loader::title() const
@@ -157,87 +74,85 @@ bool Th07Loader::open(const QString &path)
     if (!file.open(QIODevice::ReadOnly))
         return false;
 
-    uint max_file_count;
-    uint header_pos;
-    uint header_csize;
-    uint header_dsize;
+    quint32 max_file_count;
+    quint32 header_pos;
+    quint32 header_dsize;
+    quint32 header_csize;
     {
-        char buffer[16];
-        if (file.read(buffer, 16) != 16)
+        quint32 magicNumber;
+        if (file.read(reinterpret_cast<char*>(&magicNumber), 4) != 4)
             return false;
-        if (getUInt32(buffer) != 0x34474250) //PBG4
+        if (qFromLittleEndian(magicNumber) != 0x34474250) //PBG4
             return false;
 // Stage 1
-        max_file_count = getUInt32(buffer + 4);
-        header_pos = getUInt32(buffer + 8);
-        header_dsize = getUInt32(buffer + 12);
+        if (file.read(reinterpret_cast<char*>(&max_file_count), 4) != 4)
+            return false;
+        max_file_count = qFromLittleEndian(max_file_count);
+
+        if (file.read(reinterpret_cast<char*>(&header_pos), 4) != 4)
+            return false;
+        header_pos = qFromLittleEndian(header_pos);
+
+        if (file.read(reinterpret_cast<char*>(&header_dsize), 4) != 4)
+            return false;
+        header_dsize = qFromLittleEndian(header_dsize);
+
         if (file.size() <= header_pos)
             return false;
         header_csize = file.size() - header_pos;
     }
 
-    QByteArray thbgm_ddata;
+    QByteArray thbgm_data;
     {
 // Stage 2
         file.seek(header_pos);
-        QByteArray cheader = file.read(header_csize);
-        QByteArray dheader(header_dsize, '\0');
-        decompress(cheader, dheader);
-        uint cursor = 0;
+        QByteArray header = lzDecompress(file.read(header_csize));
+        Q_ASSERT(header.size() == header_dsize);
         uint thbgm_offset;
         uint thbgm_dsize;
         uint thbgm_csize;
+        char* cursor = header.data();
         for (uint i = 0; ; ++i)
         {
             if (i == max_file_count)
                 return false;
-            QString name;
-            char c;
-            while ( (c = dheader[cursor++]) )
-                name += c;
+            QString name(cursor);
+            cursor += name.size() + 1;
             if (name != "thbgm.fmt")
             {
                 cursor += 12;
                 continue;
             }
-            max_file_count = i + 2;
-            thbgm_offset = getUInt32(dheader.data() + cursor); //offset
+            thbgm_offset = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)); //offset
             cursor += 4;
-            thbgm_dsize = getUInt64(dheader.data() + cursor); //size
+            thbgm_dsize = qFromLittleEndian<qint64>(reinterpret_cast<uchar*>(cursor)); //size
             cursor += 8;
-            while ( (c = dheader[cursor++]) )
+            while (*cursor++)
                 ;
-            thbgm_csize = getUInt32(dheader.data() + cursor) - thbgm_offset;
+            thbgm_csize = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)) - thbgm_offset;
             break;
         }
         file.seek(thbgm_offset);
-        QByteArray thbgm_cdata(file.read(thbgm_csize));
-        thbgm_ddata.resize(thbgm_dsize);
-        decompress(thbgm_cdata, thbgm_ddata);
+        thbgm_data = lzDecompress(file.read(thbgm_csize), thbgm_dsize);
+        Q_ASSERT(thbgm_data.size() == thbgm_dsize);
     }
 // Stage3
     {
-        uint cursor = 0;
+        ThbgmData* thbgmData = reinterpret_cast<ThbgmData*>(thbgm_data.data());
         for (uint i = 0; i < SongDataSize; ++i)
         {
             FileInfo info;
-            info.name = thbgm_ddata.data() + cursor;
-            cursor += 16;
-            info.offset = getUInt32(thbgm_ddata.data() + cursor);
-            cursor += 4;
-            info.checksum = getUInt32(thbgm_ddata.data() + cursor);
-            cursor += 4;
-            info.loopBegin = getUInt32(thbgm_ddata.data() + cursor) >> 2;
-            cursor += 4;
-            info.loopEnd = getUInt32(thbgm_ddata.data() + cursor) >> 2;
-            cursor += 4;
-            info.header =  QByteArray(thbgm_ddata.data() + cursor, 16);
-            cursor += 20;
+            info.name = thbgmData[i].name;
+            info.offset = qFromLittleEndian<qint32>(thbgmData[i].offset);
+            info.checksum = qFromLittleEndian<qint32>(thbgmData[i].checksum);
+            info.loopBegin = qFromLittleEndian<qint32>(thbgmData[i].loopBegin) >> 2;
+            info.loopEnd = qFromLittleEndian<qint32>(thbgmData[i].loopEnd) >> 2;
+            info.header = QByteArray(thbgmData[i].header, 16);
             if (i)
                 info_list[i - 1].size = info.offset - info_list[i - 1].offset;
             info_list << info;
         }
-        info_list[SongDataSize - 1].size = 444516656 - info_list[SongDataSize - 1].offset;
+        info_list[SongDataSize - 1].size = QFileInfo(dir.filePath(BgmName)).size() - info_list[SongDataSize - 1].offset;
     }
 
     QFile wav(dir.filePath(BgmName));

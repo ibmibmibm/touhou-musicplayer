@@ -19,47 +19,59 @@
 #include <QList>
 #include <QFileInfo>
 
-#include "th09loader.h"
+#include "th10loader.h"
 #include "helperfuncs.h"
 
-Q_EXPORT_PLUGIN2("Th09Loader", Th09Loader)
+Q_EXPORT_PLUGIN2("Th10Loader", Th10Loader)
 
 namespace {
-    const QString Title = QString::fromWCharArray(L"\u6771\u65b9\u82b1\u6620\u585a\u3000\u301c Phantasmagoria of Flower View.");
+    const QString Title = QString::fromWCharArray(L"\u6771\u65b9\u98a8\u795e\u9332\u3000\u301c Mountain of Faith.");
     const QString SongData[][2] = {
-        {"09_00", QString::fromWCharArray(L"\u82b1\u6620\u585a\u3000\u301c Higan Retour")},
-        {"09_01", QString::fromWCharArray(L"\u6625\u8272\u5c0f\u5f84\u3000\u301c Colorful Path")},
-        {"09_00b", QString::fromWCharArray(L"\u30aa\u30ea\u30a8\u30f3\u30bf\u30eb\u30c0\u30fc\u30af\u30d5\u30e9\u30a4\u30c8")},
-        {"09_02", QString::fromWCharArray(L"\u30d5\u30e9\u30ef\u30ea\u30f3\u30b0\u30ca\u30a4\u30c8")},
-        {"07_10_b", QString::fromWCharArray(L"\u6771\u65b9\u5996\u3005\u5922\u3000\u301c Ancient Temple")},
-        {"08_12", QString::fromWCharArray(L"\u72c2\u6c17\u306e\u77b3\u3000\u301c Invisible Full Moon")},
-        {"09_05", QString::fromWCharArray(L"\u304a\u3066\u3093\u3070\u604b\u5a18\u306e\u5192\u967a")},
-        {"07_09", QString::fromWCharArray(L"\u5e7d\u970a\u697d\u56e3\u3000\u301c Phantom Ensemble")},
-        {"09_07", QString::fromWCharArray(L"\u3082\u3046\u6b4c\u3057\u304b\u805e\u3053\u3048\u306a\u3044\u3000\u301c Flower Mix")},
-        {"09_10", QString::fromWCharArray(L"\u304a\u5b87\u4f50\u3055\u307e\u306e\u7d20\u3044\u5e61")},
-        {"09_08_2", QString::fromWCharArray(L"\u98a8\u795e\u5c11\u5973   (Short Version)")},
-        {"09_12", QString::fromWCharArray(L"\u30dd\u30a4\u30ba\u30f3\u30dc\u30c7\u30a3\u3000\u301c Forsaken Doll")},
-        {"09_13", QString::fromWCharArray(L"\u4eca\u6614\u5e7b\u60f3\u90f7\u3000\u301c Flower Land")},
-        {"09_09", QString::fromWCharArray(L"\u5f7c\u5cb8\u5e30\u822a\u3000\u301c Riverside View")},
-        {"09_11", QString::fromWCharArray(L"\u516d\u5341\u5e74\u76ee\u306e\u6771\u65b9\u88c1\u5224\u3000\u301c Fate of Sixty Years")},
-        {"09_00c", QString::fromWCharArray(L"\u82b1\u306e\u6620\u308b\u585a")},
-        {"09_15", QString::fromWCharArray(L"\u6b64\u5cb8\u306e\u585a")},
-        {"09_14", QString::fromWCharArray(L"\u82b1\u306f\u5e7b\u60f3\u306e\u307e\u307e\u306b")},
-        {"09_17", QString::fromWCharArray(L"\u9b42\u306e\u82b1\u3000\u301c Another Dream...")},
+        {"02", QString::fromWCharArray(L"\u5c01\u5370\u3055\u308c\u3057\u795e\u3005")},
+        {"00", QString::fromWCharArray(L"\u4eba\u604b\u3057\u795e\u69d8\u3000\u301c Romantic Fall")},
+        {"01", QString::fromWCharArray(L"\u7a32\u7530\u59eb\u69d8\u306b\u53f1\u3089\u308c\u308b\u304b\u3089")},
+        {"03", QString::fromWCharArray(L"\u5384\u795e\u69d8\u306e\u901a\u308a\u9053\u3000\u301c Dark Road")},
+        {"04", QString::fromWCharArray(L"\u904b\u547d\u306e\u30c0\u30fc\u30af\u30b5\u30a4\u30c9")},
+        {"05", QString::fromWCharArray(L"\u795e\u3005\u304c\u604b\u3057\u305f\u5e7b\u60f3\u90f7")},
+        {"06", QString::fromWCharArray(L"\u82a5\u5ddd\u9f8d\u4e4b\u4ecb\u306e\u6cb3\u7ae5\u3000\u301c Candid Friend")},
+        {"07", QString::fromWCharArray(L"\u30d5\u30a9\u30fc\u30eb\u30aa\u30d6\u30d5\u30a9\u30fc\u30eb\u3000\u301c \u79cb\u3081\u304f\u6edd")},
+        {"08", QString::fromWCharArray(L"\u5996\u602a\u306e\u5c71\u3000\u301c Mysterious Mountain")},
+        {"09", QString::fromWCharArray(L"\u5c11\u5973\u304c\u898b\u305f\u65e5\u672c\u306e\u539f\u98a8\u666f")},
+        {"10", QString::fromWCharArray(L"\u4fe1\u4ef0\u306f\u511a\u304d\u4eba\u9593\u306e\u70ba\u306b")},
+        {"11", QString::fromWCharArray(L"\u5fa1\u67f1\u306e\u5893\u5834\u3000\u301c Grave of Being")},
+        {"12", QString::fromWCharArray(L"\u795e\u3055\u3073\u305f\u53e4\u6226\u5834\u3000\u301c Suwa Foughten Field")},
+        {"15", QString::fromWCharArray(L"\u660e\u65e5\u30cf\u30ec\u306e\u65e5\u3001\u30b1\u306e\u6628\u65e5")},
+        {"16", QString::fromWCharArray(L"\u30cd\u30a4\u30c6\u30a3\u30d6\u30d5\u30a7\u30a4\u30b9")},
+        {"13", QString::fromWCharArray(L"\u9e93\u306e\u795e\u793e")},
+        {"14", QString::fromWCharArray(L"\u795e\u306f\u6075\u307f\u306e\u96e8\u3092\u964d\u3089\u3059\u3000\u301c Sylphid Dream")},
+        {"17", QString::fromWCharArray(L"\u30d7\u30ec\u30a4\u30e4\u30fc\u30ba\u30b9\u30b3\u30a2")},
     };
     const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
-    const QString FileName("th09.dat");
+    const QString FileName("th10.dat");
     const QString BgmName("thbgm.dat");
-    const QString WavName("th%1.wav");
+    const QString WavName("th10_%1.wav");
 
-    struct PGBXPreHeader
+    struct THA1PreHeader
     {
+        quint32 magicNumber;
+        quint32 headerOriginalSize;
+        quint32 headerCompressedSize;
         quint32 maxFileCount;
-        quint32 headerPos;
-        quint32 headerDictsize;
     };
 
-    QByteArray decode(const QByteArray& ciphertext, char mask_init, char mask_step, int remix_step, int len)
+    const int KeyData[8][4] =
+    {
+        {0x1b, 0x37, 0x40, 0x2800},
+        {0x51, 0xe9, 0x40, 0x3000},
+        {0xc1, 0x51, 0x80, 0x3200},
+        {0x03, 0x19, 0x400, 0x7800},
+        {0xab, 0xcd, 0x200, 0x2800},
+        {0x12, 0x34, 0x80, 0x3200},
+        {0x35, 0x97, 0x80, 0x2800},
+        {0x99, 0x37, 0x400, 0x2000},
+    };
+
+    QByteArray decode(const QByteArray& ciphertext, char mask_init, int, char mask_step, int remix_step, int len)
     {
         int size = ciphertext.size();
         QByteArray plaintext(qMin(len, size), '\0');
@@ -71,8 +83,8 @@ namespace {
         {
             if (j < remix_step)
                 remix_step = j;
-            int write_cursor_copy = write_cursor;
-            write_cursor = write_cursor_copy + remix_step - 1;
+            int write_cursor_copy = write_cursor + remix_step;
+            write_cursor = write_cursor_copy - 1;
             for (int i = (remix_step >> 1) ; i > 0; --i)
             {
                 plaintext[write_cursor] = ciphertext[read_cursor] ^ mask;
@@ -80,7 +92,7 @@ namespace {
                 write_cursor -= 2;
                 mask += mask_step;
             }
-            write_cursor = write_cursor_copy + remix_step - 2;
+            write_cursor = write_cursor_copy - 2;
             for (int i = (remix_step >> 1) ; i > 0; --i)
             {
                 plaintext[write_cursor] = ciphertext[read_cursor] ^ mask;
@@ -88,62 +100,58 @@ namespace {
                 write_cursor -= 2;
                 mask += mask_step;
             }
-            write_cursor = write_cursor_copy + remix_step;
+            write_cursor = write_cursor_copy;
         }
         return plaintext;
     }
 }
 
-const QString& Th09Loader::title() const
+const QString& Th10Loader::title() const
 {
     return Title;
 }
 
-uint Th09Loader::size() const
+uint Th10Loader::size() const
 {
     return SongDataSize;
 }
 
-bool Th09Loader::open(const QString &path)
+bool Th10Loader::open(const QString &path)
 {
     dir = QDir(path);
     if (!dir.exists(FileName) || !dir.exists(BgmName))
         return false;
 
-// PBGX decompresser
+// THA1 decompresser
     QFile file(dir.filePath(FileName));
     if (!file.open(QIODevice::ReadOnly))
         return false;
 
     uint max_file_count;
-    uint header_pos;
     uint header_csize;
-    uint header_dictsize;
-    {
-        quint32 magicNumber;
-        if (file.read(reinterpret_cast<char*>(&magicNumber), 4) != 4)
-            return false;
-        if (qFromLittleEndian(magicNumber) != 0x5a474250) //PBGX
-            return false;
-    }
+    uint header_dsize;
+    uint header_pos;
 // Stage 1
     {
-        QByteArray preHeaderData = decode(file.read(12), 0x1b, 0x37, 0xc, 0x400);
-        PGBXPreHeader* preHeader = reinterpret_cast<PGBXPreHeader*>(preHeaderData.data());
-        max_file_count = qFromLittleEndian(preHeader->maxFileCount) - 123456;
-        header_pos = qFromLittleEndian(preHeader->headerPos) - 345678;
-        header_dictsize = qFromLittleEndian(preHeader->headerDictsize) - 567891;
-        if (file.size() <= header_pos)
+        QByteArray preHeaderData = decode(file.read(0x10), 0x1b, 0x10, 0x37, 0x10, 0x10);
+        THA1PreHeader* preHeader = reinterpret_cast<THA1PreHeader*>(preHeaderData.data());
+        if (qFromLittleEndian(preHeader->magicNumber) != 0x31414854) // THA1
             return false;
-        header_csize = file.size() - header_pos;
+        header_dsize = qFromLittleEndian(preHeader->headerOriginalSize) - 123456789;
+        header_csize = qFromLittleEndian(preHeader->headerCompressedSize) - 987654321;
+        max_file_count = qFromLittleEndian(preHeader->maxFileCount) - 135792468;
+        if (file.size() <= header_csize + 0x10)
+            return false;
     }
 
     QByteArray thbgm_data;
     {
 // Stage 2
+        header_pos = file.size() - header_csize;
         file.seek(header_pos);
-        QByteArray header = lzDecompressDictSize(decode(file.read(header_csize), 0x3e, 0x9b, 0x80, 0x400), header_dictsize);
+        QByteArray header = lzDecompress(decode(file.read(header_csize), 0x3e, header_csize, 0x9b, 0x80, header_csize));
         char* cursor = header.data();
+        uint thbgm_key;
         uint thbgm_offset;
         uint thbgm_dsize;
         uint thbgm_csize;
@@ -151,49 +159,36 @@ bool Th09Loader::open(const QString &path)
         {
             if (i == max_file_count)
                 return false;
-            QString name(cursor);
-            cursor += name.size() + 1;
+            QLatin1String name(cursor);
+            {
+                size_t s = qstrlen(cursor) + 1;
+                cursor += s + (-s & 3);
+            }
             if (name != "thbgm.fmt")
             {
                 cursor += 12;
                 continue;
             }
+            thbgm_key = ('t'+'h'+'b'+'g'+'m'+'.'+'f'+'m'+'t') & 0x7;
             thbgm_offset = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)); //offset
             cursor += 4;
             thbgm_dsize = qFromLittleEndian<qint64>(reinterpret_cast<uchar*>(cursor)); //size
             cursor += 8;
-            while (*cursor++)
-                ;
-            thbgm_csize = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)) - thbgm_offset;
+            if (cursor < (header.data() + header.size()))
+            {
+                size_t s = qstrlen(cursor) + 1;
+                cursor += s + (-s & 3);
+                thbgm_csize = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cursor)) - thbgm_offset;
+            }
+            else
+                thbgm_csize = header_pos - thbgm_offset;
             break;
         }
         file.seek(thbgm_offset);
-        QByteArray thbgm_cdata = lzDecompress(file.read(thbgm_csize));
-        QByteArray thbgm_magic = thbgm_cdata.left(4);
-        thbgm_cdata = thbgm_cdata.mid(4);
-        switch (thbgm_magic.data()[3])
-        {
-            case 'M':
-                thbgm_data = decode(thbgm_cdata, 0x0, 0x0, 0x0, 0x0);
-                break;
-            case 'T':
-                thbgm_data = decode(thbgm_cdata, 0x51, 0xe9, 0x40, 0x3000);
-                break;
-            case 'A':
-                thbgm_data = decode(thbgm_cdata, 0xc1, 0x51, 0x1400, 0x2000);
-                break;
-            case 'J':
-                thbgm_data = decode(thbgm_cdata, 0x03, 0x19, 0x1400, 0x7800);
-                break;
-            case 'E':
-                thbgm_data = decode(thbgm_cdata, 0x0, 0x0, 0x0, 0x0);
-                break;
-            case 'W':
-                thbgm_data = decode(thbgm_cdata, 0x12, 0x34, 0x400, 0x2800);
-                break;
-            case '-':
-                thbgm_data = decode(thbgm_cdata, 0x35, 0x97, 0x80, 0x2800);
-        }
+        thbgm_data = file.read(thbgm_csize);
+        thbgm_data = decode(thbgm_data, KeyData[thbgm_key][0], thbgm_csize, KeyData[thbgm_key][1], KeyData[thbgm_key][2], KeyData[thbgm_key][3]);
+        if (thbgm_csize != thbgm_dsize)
+            thbgm_data = lzDecompress(thbgm_data, thbgm_dsize);
     }
 // Stage3
     {
@@ -225,7 +220,7 @@ bool Th09Loader::open(const QString &path)
     return true;
 }
 
-MusicData Th09Loader::at(uint index)
+MusicData Th10Loader::at(uint index)
 {
     Q_ASSERT(index < SongDataSize);
     FileInfo info = info_hash.value(WavName.arg(SongData[index][0]));
@@ -245,7 +240,7 @@ MusicData Th09Loader::at(uint index)
     );
 }
 
-QByteArray Th09Loader::content(uint index)
+QByteArray Th10Loader::content(uint index)
 {
     Q_ASSERT(index < SongDataSize);
     FileInfo info = info_hash.value(WavName.arg(SongData[index][0]));
@@ -272,7 +267,7 @@ QByteArray Th09Loader::content(uint index)
     return wav;
 }
 
-void Th09Loader::close()
+void Th10Loader::close()
 {
     info_hash.clear();
 }

@@ -15,7 +15,6 @@
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <QApplication>
-#include <QPluginLoader>
 #include <QSettings>
 #include <QTime>
 #include <QMessageBox>
@@ -23,8 +22,10 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QToolBar>
+#include <QFileDialog>
 
 #include "mainwindow.h"
+#include "musicsaver_wav.h"
 
 namespace {
     QString RepeatString(int life)
@@ -46,12 +47,19 @@ MainWindow::MainWindow()
     connect(musicPlayer, SIGNAL(currentMusicChanged(const MusicData&)), this, SLOT(currentMusicChanged(const MusicData&)));
     connect(musicPlayer, SIGNAL(loopChanged(uint)), this, SLOT(loopChanged(uint)));
 
-    connect(pluginLoader, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-
     setupActions();
     setupMenus();
     setupUi();
     timeLcd->display("00:00.000");
+    {
+        QSettings settings;
+
+        settings.beginGroup(QLatin1String("General"));
+        bool loadDataFileOnStartup = settings.value("Load On Startup").toBool();
+        settings.endGroup();
+        if (loadDataFileOnStartup)
+            loadFile();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -71,36 +79,13 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::config()
 {
-    QSettings settings;
-    int size = settings.beginReadArray("appDir");
-    for (int i = 0; i < size; ++i)
-    {
-        settings.setArrayIndex(i);
-        QString title = settings.value("title").toString();
-        QString path = settings.value("path").toString();
-        if (pluginLoader->contains(title))
-        {
-            int id = pluginLoader->id(title);
-            configDialog->setDir(id, path);
-        }
-    }
-    settings.endArray();
-    if (configDialog->exec() == QDialog::Accepted)
-    {
-        settings.beginWriteArray("appDir");
-        for (int i = 0; i < pluginLoader->size(); ++i)
-        {
-            settings.setArrayIndex(i);
-            settings.setValue("title", pluginLoader->title(i));
-            settings.setValue("path", configDialog->dir(i));
-        }
-        settings.endArray();
-    }
+    ConfigDialog(pluginLoader, musicPlayer, this).exec();
 }
 
 void MainWindow::insertMusic(const MusicData& musicData)
 {
     musicDataList << musicData;
+
     int r = musicTable->rowCount();
     musicTable->insertRow(r);
 
@@ -115,40 +100,55 @@ void MainWindow::insertMusic(const MusicData& musicData)
     QTableWidgetItem *albumItem = new QTableWidgetItem(musicData.album());
     albumItem->setFlags(albumItem->flags() ^ Qt::ItemIsEditable);
     musicTable->setItem(r, 2, albumItem);
-
-    musicTable->selectRow(r);
-    musicTable->resizeRowsToContents();
 }
 
 void MainWindow::loadFile()
 {
     pluginLoader->clear();
-    QSettings settings;
 
-    int size = settings.beginReadArray("appDir");
-    for (int i = 0; i < size; ++i)
+    QTime time;
+    time.restart();
     {
-        settings.setArrayIndex(i);
-        QString title = settings.value("title").toString();
-        QString path = settings.value("path").toString();
-        loadingTitle = title;
+        QSettings settings;
 
-        if (path.size() && pluginLoader->contains(title) && !pluginLoader->load(title, path, "music"))
-            QMessageBox::warning(this, tr("Fatal Error"), tr("%1 is not the installation path of %2.").arg(path).arg(title));
+        settings.beginGroup(QLatin1String("General"));
+        int size = settings.beginReadArray("Applications Directory");
+        for (int i = 0; i < size; ++i)
+        {
+            settings.setArrayIndex(i);
+            QString title = settings.value("Title").toString();
+            QString path = settings.value("Path").toString();
+            loadingTitle = title;
+
+            if (path.size() && pluginLoader->contains(title) && !pluginLoader->load(title, path))
+                QMessageBox::warning(this, tr("Fatal Error"), tr("%1 is not the installation path of %2.").arg(path).arg(title));
+        }
+        settings.endArray();
+        settings.endGroup();
     }
-    settings.endArray();
+    qDebug() << "Loading used " << time.elapsed() << " ms";
 
-    while (musicTable->rowCount() > 0)
-        musicTable->removeRow(0);
+    time.restart();
+    musicPlayer->stop();
     musicDataList.clear();
+    musicTable->setEnabled(false);
+    musicTable->setRowCount(0);
+    qApp->processEvents();
+    qDebug() << "Cleaning used " << time.elapsed() << " ms";
 
+    time.restart();
     for (int i = 0; i < pluginLoader->musicSize(); ++i)
+    {
         insertMusic(pluginLoader->musicData(i));
+        if ((i & 15) == 0)
+            qApp->processEvents();
+    }
+    musicTable->setEnabled(true);
+    qDebug() << "Inserting used " << time.elapsed() << " ms";
 
     if (musicDataList.size())
     {
-        musicTable->setEnabled(true);
-
+        musicTable->resizeRowsToContents();
         currentIndex = 0;
         musicPlayer->setCurrentMusic(musicDataList.at(0), qobject_cast<QSpinBox*>(musicTable->cellWidget(0, 0))->value());
 
@@ -157,10 +157,33 @@ void MainWindow::loadFile()
     }
 }
 
+void MainWindow::saveFile()
+{
+    QString filter;
+    QStringList filterList;
+    filterList << MusicSaver_Wav::filterString();
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save music file to..."), QString(), filterList.join(";;"), &filter);
+    if (!fileName.size())
+        return;
+
+    int id = musicTable->currentRow();
+    quint64 fadeoutTime;
+    {
+        QSettings settings;
+        settings.beginGroup("Playback");
+        fadeoutTime = settings.value("Fadeout Time", 10000U).toUInt();
+        settings.endGroup();
+    }
+    MusicSaver* musicSaver = new MusicSaver_Wav;
+    if (!musicSaver->save(fileName, musicDataList.at(id), qobject_cast<QSpinBox*>(musicTable->cellWidget(id, 0))->value(), fadeoutTime))
+        QMessageBox::warning(this, tr("Fatal Error"), musicSaver->errorString());
+    delete musicSaver;
+}
+
 void MainWindow::about()
 {
     musicTable->resizeRowsToContents();
-    qDebug() << musicTable->columnWidth(0) << musicTable->columnWidth(1) << musicTable->columnWidth(2);
+    //qDebug() << musicTable->columnWidth(0) << musicTable->columnWidth(1) << musicTable->columnWidth(2);
     QMessageBox::about(this, tr("About Touhou Music Player"), tr(
         "Touhou Music Player %1 by BestSteve (ibmibmibm - ptt.cc)\n\n"
         "This program is free software: you can redistribute it and/or modify\n"
@@ -176,12 +199,6 @@ void MainWindow::about()
         "You should have received a copy of the GNU General Public License\n"
         "along with this program.  If not, see <http://www.gnu.org/licenses/>."
     ).arg(qApp->applicationVersion()));
-}
-
-void MainWindow::loadProgress(int progress)
-{
-    titleLabel->setText(QString("%1 %2%").arg(loadingTitle).arg(progress));
-    qApp->processEvents();
 }
 
 void MainWindow::stateChanged(MusicPlayerState newState, MusicPlayerState /* oldState */)
@@ -217,7 +234,7 @@ void MainWindow::stateChanged(MusicPlayerState newState, MusicPlayerState /* old
 void MainWindow::totalSamplesChanged(qint64 newTotalSamples)
 {
     seekSlider->setMaximum(newTotalSamples);
-//    qDebug() << newTotalSamples;
+    //qDebug() << newTotalSamples;
 }
 
 void MainWindow::loopChanged(uint newLoop)
@@ -264,7 +281,7 @@ int MainWindow::getNewId(int offset)
 
 void MainWindow::aboutToFinish()
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
     Q_ASSERT(musicDataList.size() > currentIndex);
     int next = getNewId(1);
     musicPlayer->enqueue(musicDataList.at(next), qobject_cast<QSpinBox*>(musicTable->cellWidget(next, 0))->value());
@@ -282,18 +299,13 @@ void MainWindow::previous()
 
 void MainWindow::musicChanged(int row, int /*column*/)
 {
-    bool wasPlaying = musicPlayer->state() == PlayingState;
-
     musicPlayer->stop();
     musicPlayer->clearQueue();
 
     musicPlayer->setCurrentMusic(musicDataList.at(row), qobject_cast<QSpinBox*>(musicTable->cellWidget(row, 0))->value());
     titleLabel->setText(QString("%1 %2").arg(musicDataList.at(currentIndex).title()).arg(RepeatString(musicPlayer->remainLoop())));
 
-    if (wasPlaying)
-        musicPlayer->play();
-    else
-        musicPlayer->stop();
+    musicPlayer->play();
 }
 
 void MainWindow::setupActions()
@@ -304,8 +316,8 @@ void MainWindow::setupActions()
     pauseAction = new QAction(style()->standardIcon(QStyle::SP_MediaPause), tr("P&ause"), this);
     pauseAction->setShortcut(tr("Ctrl+A"));
     pauseAction->setDisabled(true);
-    stopAction = new QAction(style()->standardIcon(QStyle::SP_MediaStop), tr("&Stop"), this);
-    stopAction->setShortcut(tr("Ctrl+S"));
+    stopAction = new QAction(style()->standardIcon(QStyle::SP_MediaStop), tr("S&top"), this);
+    stopAction->setShortcut(tr("Ctrl+T"));
     stopAction->setDisabled(true);
     nextAction = new QAction(style()->standardIcon(QStyle::SP_MediaSkipForward), tr("&Next"), this);
     nextAction->setShortcut(tr("Ctrl+N"));
@@ -315,6 +327,8 @@ void MainWindow::setupActions()
     previousAction->setDisabled(true);
     loadFileAction = new QAction(tr("&Load data file"), this);
     loadFileAction->setShortcut(tr("Ctrl+L"));
+    saveFileAction = new QAction(tr("&Save music file"), this);
+    saveFileAction->setShortcut(tr("Ctrl+S"));
     exitAction = new QAction(tr("E&xit"), this);
     exitAction->setShortcut(tr("Ctrl+X"));
     configAction = new QAction(tr("Con&fig"), this);
@@ -330,6 +344,7 @@ void MainWindow::setupActions()
     connect(nextAction, SIGNAL(triggered()), this, SLOT(next()));
     connect(previousAction, SIGNAL(triggered()), this, SLOT(previous()));
     connect(loadFileAction, SIGNAL(triggered()), this, SLOT(loadFile()));
+    connect(saveFileAction, SIGNAL(triggered()), this, SLOT(saveFile()));
     connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
     connect(configAction, SIGNAL(triggered()), this, SLOT(config()));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(about()));
@@ -340,6 +355,7 @@ void MainWindow::setupMenus()
 {
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(loadFileAction);
+    fileMenu->addAction(saveFileAction);
     fileMenu->addSeparator();
     fileMenu->addAction(exitAction);
 
@@ -361,8 +377,6 @@ void MainWindow::setupMenus()
 
 void MainWindow::setupUi()
 {
-    configDialog = new ConfigDialog(pluginLoader->title(), this);
-
     QToolBar *bar = new QToolBar(this);
 
     bar->addAction(playAction);
@@ -391,19 +405,18 @@ void MainWindow::setupUi()
     timeLcd->setPalette(palette);
     timeLcd->setNumDigits(9);
 
-    QStringList title;
-    title << tr("Repeat") << tr("Title") << tr("Album");
-
-    musicTable = new QTableWidget(0, title.size(), this);
-    musicTable->setHorizontalHeaderLabels(title);
+    {
+        QStringList title;
+        title << tr("Repeat") << tr("Title") << tr("Album");
+        musicTable = new QTableWidget(0, title.size(), this);
+        musicTable->setHorizontalHeaderLabels(title);
+        musicTable->setColumnWidth(0, 56);
+        musicTable->setColumnWidth(1, 251);
+        musicTable->setColumnWidth(2, 295);
+    }
     musicTable->setSelectionMode(QAbstractItemView::SingleSelection);
     musicTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     connect(musicTable, SIGNAL(cellDoubleClicked(int, int)), this, SLOT(musicChanged(int, int)));
-
-    musicTable->setColumnWidth(0, 56);
-    musicTable->setColumnWidth(1, 251);
-    musicTable->setColumnWidth(2, 295);
-    musicTable->setEnabled(false);
 
     QHBoxLayout *seekerLayout = new QHBoxLayout();
     seekerLayout->addWidget(seekSlider);

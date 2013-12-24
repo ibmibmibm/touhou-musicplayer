@@ -14,42 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TH06LOADER_H
-#define TH06LOADER_H
+#ifndef MUSICSAVER_H
+#define MUSICSAVER_H
 #include <QObject>
-#include <QString>
-#include <QHash>
-#include <QDir>
-#include <QByteArray>
-#include "loaderinterface.h"
+#include "musicdata.h"
 
-struct FileInfo
+class MusicSaver
 {
-    uint offset;
-    uint loopBegin;
-    uint loopEnd;
-    uint checksum;
-    quint64 size;
-    QString name;
-    QByteArray header;
-};
-
-class Th11Loader : public QObject, public LoaderInterface
-{
-    Q_OBJECT
-    Q_INTERFACES(LoaderInterface)
-
     public:
-        Th11Loader() {}
-        const QString& title() const;
-        bool open(const QString &);
-        void close();
-        MusicData at(uint index);
-        QByteArray content(uint index);
-        uint size() const;
+        virtual bool save(const QString& filename, MusicData musicData, uint loop, uint fadeoutTime) = 0;
+        virtual ~MusicSaver() {}
+        QString errorString() const { return _errorString; }
+    protected:
+        qreal fadeoutVolume(quint64 fadeoutSample, quint64 sample);
+        void setErrorString(QString newErrorString) { _errorString = newErrorString; }
     private:
-        QHash<QString, FileInfo> info_hash;
-        QDir dir;
+        QString _errorString;
 };
 
-#endif //TH06LOADER_H
+#endif // MUSICSAVER_H

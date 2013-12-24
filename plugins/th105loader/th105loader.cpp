@@ -16,6 +16,7 @@
  */
 #include <QFile>
 #include <QHash>
+#include <QBuffer>
 
 #include "th105loader.h"
 #include "helperfuncs.h"
@@ -59,6 +60,13 @@ namespace {
     };
     const uint SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
     const QString FileName("th105b.dat");
+
+    struct FileDescription
+    {
+        quint32 offset;
+        quint32 size;
+        quint8 len;
+    };
 
     void maskInit(int mask[0x270], int s)
     {
@@ -178,15 +186,14 @@ bool Th105Loader::open(const QString &path)
     quint16 file_count;
     qint32 header_size;
     {
-        char buffer[4];
-        if (file.read(buffer, 2) != 2)
+        if (file.read(reinterpret_cast<char*>(&file_count), 2) != 2)
             return false;
 
-        file_count = getUInt16(buffer);
+        file_count = qFromLittleEndian(file_count);
 
-        if (file.read(buffer, 4) != 4)
+        if (file.read(reinterpret_cast<char*>(&header_size), 4) != 4)
             return false;
-        header_size = getUInt32(buffer);
+        header_size = qFromLittleEndian(header_size);
     }
 
     QHash<QString, FileInfo> info_hash;
@@ -213,18 +220,17 @@ bool Th105Loader::open(const QString &path)
         }
 
         // parse header
-        int cursor = 0;
+        char* cursor = header.data();
         for (int i = 0; i < file_count; ++i)
         {
             FileInfo info;
             info.loopBegin = info.loopEnd = 0;
-            info.offset = getUInt32(header.data() + cursor);
-            cursor += 4;
-            info.size = getUInt32(header.data() + cursor);
-            cursor += 4;
-            uint len = getUInt8(header.data() + cursor);
-            ++cursor;
-            QString name = QString::fromAscii(header.data() + cursor, len);
+            FileDescription* fileDescription = reinterpret_cast<FileDescription*>(cursor);
+            cursor += 9;
+            info.offset = qFromLittleEndian(fileDescription->offset);
+            info.size = qFromLittleEndian(fileDescription->size);
+            uint len = qFromLittleEndian(fileDescription->len);
+            QString name = QString::fromAscii(cursor, len);
             cursor += len;
 
             if (name.endsWith(".ogg") || name.endsWith(".sfl"))
@@ -236,17 +242,27 @@ bool Th105Loader::open(const QString &path)
 
     for (uint i = 0; i < SongDataSize; ++i)
     {
-        QString ogg = SongData[i][0] + ".ogg";
+        QString ogg(SongData[i][0] + ".ogg");
         if (!info_hash.contains(ogg))
             return false;
         FileInfo info = info_hash.value(ogg);
 
-// SoundForge sfl file parser
-        QString sfl = SongData[i][0] + ".sfl";
+        QString sfl(SongData[i][0] + ".sfl");
+
         if (info_hash.contains(sfl))
         {
             FileInfo cueinfo = info_hash.value(sfl);
+// SoundForge sfl file parser
+            file.seek(cueinfo.offset);
+            QByteArray cue(file.read(cueinfo.size));
+            decode(cue.data(), cueinfo);
 
+            QBuffer cuefile(&cue);
+            cuefile.open(QIODevice::ReadOnly);
+            if (!SFLParser(cuefile, 0, cueinfo.size, info.loopBegin, info.loopEnd))
+                return false;
+
+            /*
             file.seek(cueinfo.offset);
             QByteArray cue(file.read(cueinfo.size));
             decode(cue.data(), cueinfo);
@@ -254,7 +270,7 @@ bool Th105Loader::open(const QString &path)
             if (cue.size() > 16 && cue.startsWith("RIFF"))
             {
                 int cursor = 4;
-                int data_size = getUInt32(cue.data() + cursor) + cursor;
+                int data_size = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) + cursor;
                 cursor += 4;
                 char *data_title = cue.data() + cursor;
                 cursor += 4;
@@ -264,24 +280,24 @@ bool Th105Loader::open(const QString &path)
                     {
                         char *section_title = cue.data() + cursor;
                         cursor += 4;
-                        int section_size = getUInt32(cue.data() + cursor);
+                        int section_size = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor));
                         cursor += 4;
                         int section_end = section_size + cursor;
                         if (qstrncmp(section_title, "cue ", 4) == 0)
                         {
-                            Q_ASSERT(getUInt32(cue.data() + cursor) == 1);
+                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 1);
                             cursor += 4;
-                            Q_ASSERT(getUInt32(cue.data() + cursor) == 1);
+                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 1);
                             cursor += 4;
-                            info.loopBegin = getUInt32(cue.data() + cursor);
+                            info.loopBegin = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor));
                             cursor += 4;
                             Q_ASSERT(qstrncmp(cue.data() + cursor, "data", 4) == 0);
                             cursor += 4;
-                            Q_ASSERT(getUInt32(cue.data() + cursor) == 0);
+                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 0);
                             cursor += 4;
-                            Q_ASSERT(getUInt32(cue.data() + cursor) == 0);
+                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 0);
                             cursor += 4;
-                            Q_ASSERT(getUInt32(cue.data() + cursor) == info.loopBegin);
+                            Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == info.loopBegin);
                             cursor += 4;
                             Q_ASSERT(cursor == section_end);
                         }
@@ -293,26 +309,26 @@ bool Th105Loader::open(const QString &path)
                             {
                                 char *frag_title = cue.data() + cursor;
                                 cursor += 4;
-                                int frag_size = getUInt32(cue.data() + cursor);
+                                int frag_size = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor));
                                 cursor += 4;
                                 int frag_end = frag_size + cursor;
                                 if (qstrncmp(frag_title, "ltxt", 4) == 0)
                                 {
-                                    Q_ASSERT(getUInt32(cue.data() + cursor) == 1);
+                                    Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 1);
                                     cursor += 4;
-                                    info.loopEnd = getUInt32(cue.data() + cursor);
+                                    info.loopEnd = qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor));
                                     cursor += 4;
                                     Q_ASSERT(qstrncmp(cue.data() + cursor, "rgn ", 4) == 0);
                                     cursor += 4;
-                                    Q_ASSERT(getUInt32(cue.data() + cursor) == 0);
+                                    Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 0);
                                     cursor += 4;
-                                    Q_ASSERT(getUInt32(cue.data() + cursor) == 0);
+                                    Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 0);
                                     cursor += 4;
                                     Q_ASSERT(cursor == frag_end);
                                 }
                                 else if (qstrncmp(frag_title, "labl", 4) == 0)
                                 {
-                                    Q_ASSERT(getUInt32(cue.data() + cursor) == 1);
+                                    Q_ASSERT(qFromLittleEndian<qint32>(reinterpret_cast<uchar*>(cue.data() + cursor)) == 1);
                                     cursor += 4;
                                     //qDebug("%s", cue.data() + cursor);
                                     cursor = frag_end;
@@ -329,11 +345,13 @@ bool Th105Loader::open(const QString &path)
                 //qDebug("start=%u during=%u", loop_begin, loop_during);
                 info.loopEnd += info.loopBegin;
             }
+            */
         }
         else // for data/bgm/sr.ogg
         {
             info.loopEnd = 3724704 - 44100;
         }
+
         info_list << info;
     }
     return true;

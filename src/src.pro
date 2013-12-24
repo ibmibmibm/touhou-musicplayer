@@ -14,13 +14,15 @@
 # along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
 
 TARGET        = touhou-musicplayer
-DESTDIR       = ../
+DESTDIR       = ..
 CONFIG       += debug_and_release
 INCLUDEPATH  += ../include
 HEADERS      += ../include/mainwindow.h \
                 ../include/configdialog.h \
                 ../include/pluginloader.h \
                 ../include/musicplayer.h \
+                ../include/musicsaver.h \
+                ../include/musicsaver_wav.h \
                 ../include/musicfile.h \
                 ../include/musicfile_wav.h \
                 ../include/musicfile_ogg.h \
@@ -30,15 +32,21 @@ SOURCES      += main.cpp \
                 mainwindow.cpp \
                 pluginloader.cpp \
                 musicplayer.cpp \
+                musicsaver.cpp \
+                musicsaver_wav.cpp \
                 musicfile.cpp \
                 musicfile_wav.cpp \
                 musicfile_ogg.cpp \
                 configdialog.cpp
-TRANSLATIONS += ../touhou_musicplayer_zh_TW.ts
+
+TRANSLATIONS = ../translations/touhou_musicplayer_zh_TW.ts
 
 win32 {
     LIBS        += -LG:\portaudio\lib -lportaudio_x86 -LG:\libvorbis\lib -logg -lvorbis -lvorbisfile
     INCLUDEPATH += G:\portaudio\include G:\libvorbis\include
+    CONFIG(debug, debug|release) {
+        CONFIG += console
+    }
 }
 
 unix {

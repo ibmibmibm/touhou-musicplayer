@@ -18,7 +18,6 @@
 #include <QDir>
 #include <QByteArray>
 #include <QPluginLoader>
-#include <QtDebug>
 
 #include "pluginloader.h"
 
@@ -55,55 +54,38 @@ PluginLoader::PluginLoader()
     }
 }
 
-QList<QString> PluginLoader::title() const
-{
-    QList<QString> ret;
-    foreach (LoaderInterface* loader, loader_list)
-    {
-        ret << loader->title();
-    }
-    return ret;
-}
-
 void PluginLoader::clear()
 {
     data.clear();
 }
 
-bool PluginLoader::load(QString title, QString path, QString /*musicdir_path*/)
+bool PluginLoader::load(QString title, QString path)
 {
     if (!loader_list_map.contains(title))
         return false;
 
     LoaderInterface* dataLoader = loader_list.at(loader_list_map.value(title));
-    if (!dataLoader->open(path))
     {
-        return false;
+        /*
+        QTime time;
+        time.start();
+        for (int i = 0; i < 1000; ++i)
+        {
+            dataLoader->open(path);
+            dataLoader->close();
+        }
+        int t = time.elapsed();
+        qDebug() << dataLoader->title() << " used " << t * 0.001 << " ms";
+        */
+        if (!dataLoader->open(path))
+            return false;
     }
     for (uint i = 0; i < dataLoader->size(); ++i)
     {
-        emit loadProgress(i * 100.0 / dataLoader->size());
         MusicData musicData(dataLoader->at(i));
-//        qDebug() << m.title;
-        /*
-        QDir musicdir(musicdir_path);
-        musicdir.mkpath(musicData.album());
-        QDir dir(musicdir.filePath(musicData.album()));
-        musicData.setFileName(dir.absoluteFilePath(musicData.title() + musicData.suffix()));
-
-        QFile file(musicData.fileName());
-        if (file.size() != musicData.size())
-        {
-            if (!file.open(QIODevice::WriteOnly))
-                return false;
-            file.write(dataLoader->content(i));
-            file.close();
-        }
-        */
         data << musicData;
     }
     dataLoader->close();
-    emit loadProgress(100);
     return true;
 }
 

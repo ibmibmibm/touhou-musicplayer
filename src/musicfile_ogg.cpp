@@ -151,7 +151,7 @@ qint64 _MusicFile_OggCore::size()
 
 bool _MusicFile_OggCore::seek(qint64 pos)
 {
-    qDebug() << Q_FUNC_INFO << "pos" << pos << "size" << size();
+    //qDebug() << Q_FUNC_INFO << "pos" << pos << "size" << size();
     mutex.lock();
     int result = ov_pcm_seek(&file, pos / shell->_blockwidth);
     mutex.unlock();
@@ -160,19 +160,19 @@ bool _MusicFile_OggCore::seek(qint64 pos)
         case 0:
             break;
         case OV_ENOSEEK:
-            qDebug() << Q_FUNC_INFO << "OV_ENOSEEK";
+            //qDebug() << Q_FUNC_INFO << "OV_ENOSEEK";
             return false;
         case OV_EINVAL:
-            qDebug() << Q_FUNC_INFO << "OV_EINVAL";
+            //qDebug() << Q_FUNC_INFO << "OV_EINVAL";
             return false;
         case OV_EREAD:
-            qDebug() << Q_FUNC_INFO << "OV_EREAD";
+            //qDebug() << Q_FUNC_INFO << "OV_EREAD";
             return false;
         case OV_EFAULT:
-            qDebug() << Q_FUNC_INFO << "OV_EFAULT";
+            //qDebug() << Q_FUNC_INFO << "OV_EFAULT";
             return false;
         case OV_EBADLINK:
-            qDebug() << Q_FUNC_INFO << "OV_EBADLINK";
+            //qDebug() << Q_FUNC_INFO << "OV_EBADLINK";
             return false;
     }
     /*int currpos = this->pos();
@@ -182,7 +182,7 @@ bool _MusicFile_OggCore::seek(qint64 pos)
         this->readData(buf, pos - currpos);
         delete [] buf;
     }*/
-    qDebug() << Q_FUNC_INFO << "result" << this->pos() * shell->_blockwidth;
+    //qDebug() << Q_FUNC_INFO << "result" << this->pos() * shell->_blockwidth;
     return true;
 }
 
@@ -312,7 +312,7 @@ bool MusicFile_Ogg::open(OpenMode mode)
         goto err;
     if (_loopEnd == 3724704)
     {
-        qDebug() << fileName();
+        //qDebug() << fileName();
     }
     return true;
 err:

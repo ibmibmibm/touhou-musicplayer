@@ -17,8 +17,6 @@
 #include <QDir>
 #include <QFile>
 #include <QList>
-#include <QtDebug>
-#include <QMessageBox>
 
 #include "th06loader.h"
 #include "helperfuncs.h"
@@ -58,97 +56,6 @@ namespace {
         int checksum;
         QString name;
     };
-
-    class BitReader
-    {
-        public:
-            BitReader(const char*const _data, const int _size) :
-                pos(0),
-                sum(0),
-                bitPos(0x80),
-                size(_size),
-                data(_data)
-            {}
-            bool getBit()
-            {
-                if (pos >= size)
-                    return false;
-                bool ret = (static_cast<unsigned char>(data[pos]) & bitPos);
-                bitPos >>= 1;
-                if (!bitPos)
-                {
-                    sum += static_cast<unsigned char>(data[pos]);
-                    ++pos;
-                    bitPos = 0x80;
-                }
-                return ret;
-            }
-            uint getBits(int len)
-            {
-                uint ret = 0;
-                uint mask = 1 << --len;
-                for (int i = 0; i <= len; ++i)
-                {
-                    if (getBit())
-                        ret |= mask;
-                    mask >>= 1;
-                }
-                return ret;
-            }
-            uint getUInt32()
-            {
-                return getBits((getBits(2) + 1) << 3);
-            }
-            char getChar()
-            {
-                return getBits(8);
-            }
-            uint getSum() const { return sum; }
-        private:
-            uint pos;
-            uint sum;
-            quint8 bitPos;
-            const uint size;
-            const char*const data;
-    };
-
-    int decompress(const QByteArray& compressed, QByteArray& decompressd)
-    {
-        QByteArray dict(0x2000, '\0');
-        BitReader reader(compressed.data(), compressed.size());
-        int cursor = 0;
-        int dict_cursor = 1;
-        char c;
-        int addr, jump;
-        forever
-        {
-            if (reader.getBit())
-            {
-                c = reader.getChar();
-                decompressd[cursor] = c;
-                ++cursor;
-                dict[dict_cursor] = c;
-                dict_cursor = (dict_cursor + 1) & 0x1fff;
-            }
-            else
-            {
-                addr = reader.getBits(13);
-                if (addr == 0)
-                    break;
-                jump = reader.getBits(4) + 3;
-                for (int i = 0; i < jump; ++i)
-                {
-                    c = dict[addr];
-                    addr = (addr + 1) & 0x1fff;
-                    decompressd[cursor] = c;
-                    ++cursor;
-                    dict[dict_cursor] = c;
-                    dict_cursor = (dict_cursor + 1) & 0x1fff;
-                }
-            }
-        }
-        return reader.getSum();
-    }
 }
 
 const QString& Th06Loader::title() const
@@ -176,15 +83,16 @@ bool Th06Loader::open(const QString &path)
     uint header_pos;
     uint header_size;
     {
-        char buffer[9];
-        if (file.read(buffer, 4) != 4)
+        quint32 magicNumber;
+        if (file.read(reinterpret_cast<char*>(&magicNumber), 4) != 4)
             return false;
-        if (getUInt32(buffer) != 0x33474250) //PBG3
+        if (qFromLittleEndian(magicNumber) != 0x33474250) //PBG3
             return false;
 // Stage 1
-        if (file.read(buffer, 9) != 9)
+        QByteArray buffer = file.read(9);
+        if (buffer.size() != 9)
             return false;
-        BitReader reader(buffer, 9);
+        BitReader reader(buffer);
         max_file_count = reader.getUInt32();
         header_pos = reader.getUInt32();
         if (file.size() <= header_pos)
@@ -197,7 +105,7 @@ bool Th06Loader::open(const QString &path)
 // Stage 2
         file.seek(header_pos);
         QByteArray header = file.read(header_size);
-        BitReader reader(header.data(), header_size);
+        BitReader reader(header);
         for (uint i = 0; i < max_file_count; ++i)
         {
             FileInfo info;
@@ -220,15 +128,13 @@ bool Th06Loader::open(const QString &path)
             FileInfo info = info_list.at(i);
             if (!info.name.endsWith(".pos"))
                 continue;
-            uint csize = info_list.at(i + 1).offset - info.offset;
             file.seek(info.offset);
-            QByteArray cdata(file.read(csize));
-            QByteArray ddata(info.size, '\0');
-            int checksum = decompress(cdata, ddata);
-            if (checksum == info.checksum)
-                data.insert(info.name, ddata);
-            else
-                qDebug() << QString("file %1: checksum error!").arg(info.name);
+            uint csize = info_list.at(i + 1).offset - info.offset;
+            int checksum;
+            QByteArray ddata = lzDecompressChechsum(checksum, file.read(csize), info.size);
+            Q_ASSERT(ddata.size() == info.size);
+            Q_ASSERT(checksum == info.checksum);
+            data.insert(info.name, ddata);
         }
     }
 
@@ -248,9 +154,9 @@ MusicData Th06Loader::at(uint index)
     Q_ASSERT(index < SongDataSize);
     QString pos = PosName.arg(index + 1, 2, 10, QLatin1Char('0'));
     Q_ASSERT(data.contains(pos));
-    const char *d = data.value(pos).data();
-    uint loopBegin = getUInt32(d);
-    uint loopEnd = getUInt32(d + 4);
+    const uchar *d = reinterpret_cast<const uchar*>(data.value(pos).data());
+    qint32 loopBegin = qFromLittleEndian<qint32>(d);
+    qint32 loopEnd = qFromLittleEndian<qint32>(d + 4);
 
     QFile file(dir.absoluteFilePath(WavName.arg(index + 1, 2, 10, QLatin1Char('0'))));
 

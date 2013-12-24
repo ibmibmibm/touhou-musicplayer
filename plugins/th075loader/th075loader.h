@@ -14,33 +14,30 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TH06LOADER_H
-#define TH06LOADER_H
+#ifndef TH075LOADER_H
+#define TH075LOADER_H
 #include <QObject>
-#include <QString>
-#include <QHash>
 #include <QDir>
+#include <QString>
+#include <QList>
 #include <QByteArray>
 #include "loaderinterface.h"
 
 struct FileInfo
 {
     uint offset;
+    uint size;
     uint loopBegin;
     uint loopEnd;
-    uint checksum;
-    quint64 size;
-    QString name;
-    QByteArray header;
 };
 
-class Th11Loader : public QObject, public LoaderInterface
+class Th075Loader : public QObject, public LoaderInterface
 {
     Q_OBJECT
     Q_INTERFACES(LoaderInterface)
 
     public:
-        Th11Loader() {}
+        Th075Loader() {}
         const QString& title() const;
         bool open(const QString &);
         void close();
@@ -48,8 +45,8 @@ class Th11Loader : public QObject, public LoaderInterface
         QByteArray content(uint index);
         uint size() const;
     private:
-        QHash<QString, FileInfo> info_hash;
+        QList<FileInfo> info_list;
         QDir dir;
 };
 
-#endif //TH06LOADER_H
+#endif //TH075LOADER_H

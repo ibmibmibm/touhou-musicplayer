@@ -3,50 +3,68 @@
 <context>
     <name>ConfigDialog</name>
     <message>
-        <location filename="src/configdialog.cpp" line="47"/>
-        <source>Choose the installation path of the program...</source>
-        <translation>選擇程式安裝資料夾...</translation>
+        <location filename="../src/configdialog.cpp" line="216"/>
+        <source>Config</source>
+        <translation>設定</translation>
     </message>
     <message>
-        <location filename="src/configdialog.cpp" line="61"/>
-        <source>Fatal Error</source>
-        <translation>嚴重錯誤</translation>
+        <location filename="../src/configdialog.cpp" line="203"/>
+        <source>General</source>
+        <translation>一般</translation>
     </message>
     <message>
-        <location filename="src/configdialog.cpp" line="61"/>
-        <source>This directory does not exist: %1.</source>
-        <translation>此資料夾不存在：%1。</translation>
+        <location filename="../src/configdialog.cpp" line="204"/>
+        <source>Playback</source>
+        <translation>播放</translation>
     </message>
+</context>
+<context>
+    <name>GeneralConfigTab</name>
     <message>
-        <location filename="src/configdialog.cpp" line="71"/>
+        <location filename="../src/configdialog.cpp" line="32"/>
         <source>Programs&apos; Directory</source>
         <translation>程式的資料夾</translation>
     </message>
     <message>
-        <location filename="src/configdialog.cpp" line="76"/>
+        <location filename="../src/configdialog.cpp" line="37"/>
         <source>Name</source>
         <translation>名稱</translation>
     </message>
     <message>
-        <location filename="src/configdialog.cpp" line="79"/>
+        <location filename="../src/configdialog.cpp" line="40"/>
         <source>Path</source>
         <translation>路徑</translation>
     </message>
     <message>
-        <location filename="src/configdialog.cpp" line="110"/>
-        <source>Config</source>
-        <translation>設定</translation>
+        <location filename="../src/configdialog.cpp" line="72"/>
+        <source>Choose the installation path of the program...</source>
+        <translation>選擇程式安裝資料夾...</translation>
+    </message>
+    <message>
+        <location filename="../src/configdialog.cpp" line="87"/>
+        <source>Fatal Error</source>
+        <translation>嚴重錯誤</translation>
+    </message>
+    <message>
+        <location filename="../src/configdialog.cpp" line="87"/>
+        <source>This directory does not exist: %1.</source>
+        <translation>此資料夾不存在：%1。</translation>
+    </message>
+    <message>
+        <location filename="../src/configdialog.cpp" line="60"/>
+        <source>Load data files on startup.</source>
+        <translation>啟動時載入資料檔。</translation>
     </message>
 </context>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="src/mainwindow.cpp" line="164"/>
+        <location filename="../src/mainwindow.cpp" line="187"/>
         <source>About Touhou Music Player</source>
         <translation>關於東方音樂播放器</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="178"/>
+        <location filename="../src/mainwindow.cpp" line="201"/>
         <source>Touhou Music Player %1 by BestSteve (ibmibmibm - ptt.cc)
 
 This program is free software: you can redistribute it and/or modify
@@ -76,159 +94,200 @@ along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</sou
 如果還沒有，請瀏覽&lt;http://www.gnu.org/licenses/&gt;。</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="192"/>
+        <location filename="../src/mainwindow.cpp" line="209"/>
         <source>Fatal Error</source>
         <translation>嚴重錯誤</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="194"/>
+        <location filename="../src/mainwindow.cpp" line="211"/>
         <source>Error</source>
         <translation>錯誤</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="300"/>
+        <location filename="../src/mainwindow.cpp" line="313"/>
         <source>&amp;Play</source>
         <translation>播放(&amp;P)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="303"/>
+        <location filename="../src/mainwindow.cpp" line="316"/>
         <source>P&amp;ause</source>
         <translation>暫停(&amp;A)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="304"/>
+        <location filename="../src/mainwindow.cpp" line="317"/>
         <source>Ctrl+A</source>
         <translation>Ctrl+A</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="306"/>
-        <source>&amp;Stop</source>
-        <translation>停止(&amp;S)</translation>
-    </message>
-    <message>
-        <location filename="src/mainwindow.cpp" line="307"/>
+        <location filename="../src/mainwindow.cpp" line="331"/>
         <source>Ctrl+S</source>
         <translation>Ctrl+S</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="309"/>
+        <location filename="../src/mainwindow.cpp" line="322"/>
         <source>&amp;Next</source>
         <translation>往前(&amp;N)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="310"/>
+        <location filename="../src/mainwindow.cpp" line="323"/>
         <source>Ctrl+N</source>
         <translation>Ctrl+N</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="312"/>
+        <location filename="../src/mainwindow.cpp" line="325"/>
         <source>P&amp;revious</source>
         <translation>往後(&amp;R)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="313"/>
+        <location filename="../src/mainwindow.cpp" line="326"/>
         <source>Ctrl+R</source>
         <translation>Ctrl+R</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="317"/>
+        <location filename="../src/mainwindow.cpp" line="332"/>
         <source>E&amp;xit</source>
         <translation>離開(&amp;X)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="318"/>
+        <location filename="../src/mainwindow.cpp" line="333"/>
         <source>Ctrl+X</source>
         <translation>Ctrl+X</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="321"/>
+        <location filename="../src/mainwindow.cpp" line="336"/>
         <source>A&amp;bout</source>
         <translation>關於(&amp;B)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="322"/>
+        <location filename="../src/mainwindow.cpp" line="337"/>
         <source>Ctrl+B</source>
         <translation>Ctrl+B</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="323"/>
+        <location filename="../src/mainwindow.cpp" line="338"/>
         <source>About &amp;Qt</source>
         <translation>關於 Qt (&amp;Q)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="324"/>
+        <location filename="../src/mainwindow.cpp" line="339"/>
         <source>Ctrl+Q</source>
         <translation>Ctrl+Q</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="340"/>
+        <location filename="../src/mainwindow.cpp" line="356"/>
         <source>&amp;File</source>
         <translation>檔案(&amp;F)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="356"/>
+        <location filename="../src/mainwindow.cpp" line="373"/>
         <source>&amp;Help</source>
         <translation>說明(&amp;H)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="394"/>
+        <location filename="../src/mainwindow.cpp" line="410"/>
         <source>Repeat</source>
         <translation>重複播放</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="394"/>
+        <location filename="../src/mainwindow.cpp" line="410"/>
         <source>Title</source>
         <translation>標題</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="348"/>
+        <location filename="../src/mainwindow.cpp" line="365"/>
         <source>&amp;Playback</source>
         <translation>播放(&amp;P)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="425"/>
+        <location filename="../src/mainwindow.cpp" line="439"/>
         <source>Touhou Music Player</source>
         <translation>東方音樂播放器</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="394"/>
+        <location filename="../src/mainwindow.cpp" line="410"/>
         <source>Album</source>
         <translation>專輯</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="137"/>
+        <location filename="../src/mainwindow.cpp" line="124"/>
         <source>%1 is not the installation path of %2.</source>
         <translation>%1 不是 %2 安裝資料夾。</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="301"/>
+        <location filename="../src/mainwindow.cpp" line="314"/>
         <source>Ctrl+P</source>
         <translation>Ctrl+P</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="315"/>
+        <location filename="../src/mainwindow.cpp" line="328"/>
         <source>&amp;Load data file</source>
         <translation>載入資料檔(&amp;L)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="316"/>
+        <location filename="../src/mainwindow.cpp" line="329"/>
         <source>Ctrl+L</source>
         <translation>Ctrl+L</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="319"/>
+        <location filename="../src/mainwindow.cpp" line="334"/>
         <source>Con&amp;fig</source>
         <translation>設定(&amp;F)</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="320"/>
+        <location filename="../src/mainwindow.cpp" line="335"/>
         <source>Ctrl+F</source>
         <translation>Ctrl+F</translation>
     </message>
     <message>
-        <location filename="src/mainwindow.cpp" line="345"/>
+        <location filename="../src/mainwindow.cpp" line="362"/>
         <source>&amp;Edit</source>
         <translation>編輯(&amp;E)</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="319"/>
+        <source>S&amp;top</source>
+        <translation>停止(&amp;T)</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="320"/>
+        <source>Ctrl+T</source>
+        <translation>Ctrl+T</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="330"/>
+        <source>&amp;Save music file</source>
+        <translation>儲存音樂檔(&amp;S)</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="165"/>
+        <source>Save music file to...</source>
+        <translation>儲存音樂檔至...</translation>
+    </message>
+</context>
+<context>
+    <name>PlaybackConfigTab</name>
+    <message>
+        <location filename="../src/configdialog.cpp" line="104"/>
+        <source>Output Device</source>
+        <translation>輸出裝置</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <location filename="../src/musicsaver_wav.cpp" line="22"/>
+        <source>Uncompressed PCM (*.wav)</source>
+        <translation>未壓縮的PCM格式 (*.wav)</translation>
+    </message>
+    <message>
+        <location filename="../src/musicsaver_wav.cpp" line="52"/>
+        <source>Fadeout time is too long.</source>
+        <translation>淡出時間太長。</translation>
+    </message>
+    <message>
+        <location filename="../src/musicsaver_wav.cpp" line="60"/>
+        <source>Repeat value is too large.</source>
+        <translation>重複播放次數太多。</translation>
     </message>
 </context>
 </TS>

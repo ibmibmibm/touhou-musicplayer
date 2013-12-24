@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <QSettings>
 #include <portaudio.h>
 #include <cstring>
 #include "musicplayer.h"
@@ -36,9 +37,6 @@ class _MusicPlayerImpl
         PaStream *stream;
         qreal volume;
         qreal targetVolume;
-        size_t buffer_size;
-        size_t buffer_max_size;
-        char* buffer;
         MusicPlayer* hook;
         _MusicPlayerImpl() :
             portaudioInitialized(false),
@@ -46,9 +44,6 @@ class _MusicPlayerImpl
             stream(NULL),
             volume(1.0),
             targetVolume(1.0),
-            buffer_size(0),
-            buffer_max_size(16384),
-            buffer(new char[buffer_max_size]),
             hook(NULL)
         {
             //qDebug() << Q_FUNC_INFO;
@@ -71,7 +66,6 @@ class _MusicPlayerImpl
                 else
                     portaudioError = err;
             }
-            delete [] buffer;
         }
         int streamCallback(const void * /*inputBuffer*/, void *outputBuffer,
             unsigned long framesPerBuffer,
@@ -79,16 +73,14 @@ class _MusicPlayerImpl
             PaStreamCallbackFlags /*statusFlags*/)
         {
             //qDebug() << Q_FUNC_INFO << "framesPerBuffer" << framesPerBuffer;
-            hook->_fillBuffer(framesPerBuffer);
-            //qDebug() << Q_FUNC_INFO << "buffer_size" << buffer_size;
-            if (buffer_size <= 0)
+            size_t bufferSize = hook->_fillBuffer(static_cast<char*>(outputBuffer), framesPerBuffer);
+            //qDebug() << Q_FUNC_INFO << "bufferSize" << bufferSize;
+            if (bufferSize == 0)
             {
                 memset(outputBuffer, 0, framesPerBuffer * hook->_file->blockwidth());
                 return paComplete;
             }
-            unsigned long samples = buffer_size / hook->_file->blockwidth();
-            memcpy(outputBuffer, buffer, buffer_size);
-            buffer_size = 0;
+            unsigned long samples = bufferSize / hook->_file->blockwidth();
             qint16 *outBuffer = static_cast<qint16*>(outputBuffer);
             qreal fadeoutVolume;
             for (unsigned long i = 0; i < samples; ++i)
@@ -138,11 +130,14 @@ MusicPlayer::MusicPlayer() :
     _file(NULL),
     _samples(0),
     _totalSamples(0),
-    _tickInterval(100),
-    _fadeoutTime(10000)
+    _tickInterval(100)
 {
     Q_ASSERT(_playerImpl.hook == NULL);
     _playerImpl.hook = this;
+    QSettings settings;
+    settings.beginGroup("Playback");
+    _fadeoutTime = settings.value("Fadeout Time", 10000U).toUInt();
+    settings.endGroup();
     connect(this, SIGNAL(finish()), this, SLOT(_next()));
     _setState(StoppedState);
 }
@@ -155,35 +150,33 @@ MusicPlayer::~MusicPlayer()
     _playerImpl.hook = NULL;
 }
 
-void MusicPlayer::_fillBuffer(qint64 needSample)
+size_t MusicPlayer::_fillBuffer(char* buffer, qint64 needSample)
 {
     //qDebug() << Q_FUNC_INFO << needSample;
     if (_musicOver)
     {
         //qDebug() << Q_FUNC_INFO << "_musicOver";
-        _playerImpl.buffer_size = 0;
         _setSamples(_totalSamples);
         emit finish();
-        return;
+        return 0;
     }
     qint64 realSamples = _samples;
     _samplesToLoop(realSamples);
     qint64 loopEnd = _file->loopEnd();
     Q_ASSERT(realSamples < loopEnd);
     qint64 targetSample = realSamples + needSample;
-    _playerImpl.buffer_size = 0;
     qint64 getSamples = 0;
     if (loopEnd <= targetSample)
     {
         //qDebug() << Q_FUNC_INFO << "loop";
-        getSamples = _file->sampleRead(_playerImpl.buffer, loopEnd - realSamples);
+        getSamples = _file->sampleRead(buffer, loopEnd - realSamples);
         needSample -= getSamples;
         _file->sampleSeek(_file->loopBegin());
     }
-    getSamples += _file->sampleRead(_playerImpl.buffer + getSamples * _file->blockwidth(), needSample);
+    getSamples += _file->sampleRead(buffer + getSamples * _file->blockwidth(), needSample);
     //qDebug() << Q_FUNC_INFO << needSample << getSamples;
-    _playerImpl.buffer_size = getSamples * _file->blockwidth();
     _setSamples(_samples + getSamples);
+    return getSamples * _file->blockwidth();
 }
 
 qreal MusicPlayer::_fadeoutVolume(qint64 offset)
@@ -274,7 +267,13 @@ void MusicPlayer::play()
         return;
     //qDebug() << Q_FUNC_INFO << "FileName" << _file->fileName();
     _setState(BufferingState);
-    const PaDeviceIndex deviceIndex = Pa_GetDefaultOutputDevice();
+    PaDeviceIndex deviceIndex;
+    {
+        QSettings settings;
+        settings.beginGroup("Playback");
+        deviceIndex = settings.value("Output Device", Pa_GetDefaultOutputDevice()).toInt();
+        settings.endGroup();
+    }
     //qDebug() << Q_FUNC_INFO << "Device name" << QString::fromLocal8Bit(Pa_GetDeviceInfo(deviceIndex)->name);
     PaStreamParameters outputparam;
     outputparam.device = deviceIndex;
@@ -286,8 +285,8 @@ void MusicPlayer::play()
             &_playerImpl.stream,
             NULL,
             &outputparam,
-            44100,
-            _playerImpl.buffer_max_size / _file->blockwidth(),
+            _file->samplerate(),
+            0,
             paNoFlag,
             _MusicPlayerImpl::streamCallback,
             &_playerImpl);
@@ -328,15 +327,18 @@ void MusicPlayer::stop()
     MusicPlayerState s = state();
     if (s != PlayingState && s != PausedState)
         return;
-    PaError err = Pa_CloseStream(_playerImpl.stream);
+    if (s == PlayingState)
+    {
+        PaError err = Pa_CloseStream(_playerImpl.stream);
+        if (err != paNoError)
+        {
+            _playerImpl.portaudioError = err;
+            _setState(ErrorState);
+            return;
+        }
+    }
     _file->seek(0);
     _setSamples(0);
-    if (err != paNoError)
-    {
-        _playerImpl.portaudioError = err;
-        _setState(ErrorState);
-        return;
-    }
     _setState(StoppedState);
 }
 
@@ -428,7 +430,7 @@ void MusicPlayer::seek(qint64 samples)
 {
     qint64 realSamples = samples;
     _samplesToLoop(realSamples);
-    qDebug() << Q_FUNC_INFO << samples << realSamples;
+    //qDebug() << Q_FUNC_INFO << samples << realSamples;
     _file->sampleSeek(realSamples);
     _setSamples(samples);
 }
@@ -488,7 +490,7 @@ void MusicPlayer::_setSamples(qint64 newSamples)
 
 void MusicPlayer::_setTotalSamples(qint64 newTotalSamples)
 {
-    qDebug() << Q_FUNC_INFO << newTotalSamples;
+    //qDebug() << Q_FUNC_INFO << newTotalSamples;
     if (_totalSamples == newTotalSamples)
         return;
     _totalSamples = newTotalSamples;
@@ -506,4 +508,21 @@ void MusicPlayer::setVolume(qreal newVolume)
 {
     //qDebug() << Q_FUNC_INFO;
     _playerImpl.targetVolume = newVolume;
+}
+
+int MusicPlayer::deviceCount() const
+{
+    return Pa_GetDeviceCount();
+}
+
+int MusicPlayer::defaultDevice() const
+{
+    return Pa_GetDefaultOutputDevice();
+}
+
+QString MusicPlayer::device(int id) const
+{
+    const PaDeviceInfo* deviceInfo = Pa_GetDeviceInfo(id);
+    const PaHostApiInfo* apiInfo = Pa_GetHostApiInfo(deviceInfo->hostApi);
+    return QString("%1 (%2)").arg(QString::fromLocal8Bit(deviceInfo->name)).arg(QString::fromLocal8Bit(apiInfo->name));
 }

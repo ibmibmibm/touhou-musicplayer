@@ -67,6 +67,10 @@ class MusicPlayer: public QObject
         uint loop() const { return _loop; }
         uint totalLoop() const { if (_queue.isEmpty()) return 0; return _queue[0].loop; }
         uint remainLoop() const { return totalLoop() - loop(); }
+
+        int deviceCount() const;
+        int defaultDevice() const;
+        QString device(int id) const;
     signals:
         void tick(qint64 samples);
         void stateChanged(MusicPlayerState newstate, MusicPlayerState oldstate);
@@ -92,7 +96,7 @@ class MusicPlayer: public QObject
         void _setSamples(qint64 newSamples);
         void _setTotalSamples(qint64 newTotalSamples);
         void _setState(MusicPlayerState newState);
-        void _fillBuffer(qint64 needSize);
+        size_t _fillBuffer(char* buffer, qint64 needSample);
         qreal _fadeoutVolume(qint64 offset);
         size_t _samplesToLoop(qint64& samples);
 
