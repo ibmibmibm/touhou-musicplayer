@@ -378,21 +378,6 @@ MusicData Th105Loader::at(uint index)
     );
 }
 
-QByteArray Th105Loader::content(uint index)
-{
-    Q_ASSERT(index < SongDataSize);
-    FileInfo info = info_list[index];
-
-    QFile file(dir.absoluteFilePath(FileName));
-    file.open(QIODevice::ReadOnly);
-
-    file.seek(info.offset);
-    QByteArray ogg(file.read(info.size));
-    decode(ogg.data(), info);
-
-    return ogg;
-}
-
 void Th105Loader::close()
 {
     info_list.clear();

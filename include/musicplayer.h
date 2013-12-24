@@ -16,11 +16,10 @@
  */
 #ifndef MUSICPLAYER_H
 #define MUSICPLAYER_H
-
-#include <QThread>
 #include <QByteArray>
+#include <QTimer>
 
-#include "musicfile.h"
+#include "threadmusicfile.h"
 
 enum MusicPlayerState
 {
@@ -63,9 +62,10 @@ class MusicPlayer: public QObject
         MusicPlayerErrorType errorType() const;
         QString errorString() const;
         qreal volume() const;
-        qint64 totalSamples() const { return _totalSamples; }
-        uint loop() const { return _loop; }
-        uint totalLoop() const { if (_queue.isEmpty()) return 0; return _queue[0].loop; }
+        qint64 samples() const { if (_file == NULL) return 0; return _file->samplePos(); }
+        qint64 totalSamples() const { if (_file == NULL) return 0; return _file->sampleSize(); }
+        uint loop() const { if (_file == NULL) return 0; return _file->loop(); }
+        uint totalLoop() const { if (_file == NULL) return 0; return _file->totalLoop(); }
         uint remainLoop() const { return totalLoop() - loop(); }
 
         int deviceCount() const;
@@ -86,37 +86,23 @@ class MusicPlayer: public QObject
         void stop();
         void seek(qint64 samples);
         void setVolume(qreal newVolume);
-        void setTotalLoop(uint newTotalLoop) { _queue[0].loop = newTotalLoop; }
     private slots:
         void _next();
+        void _tick();
+        void _loopChanged(uint newLoop) { emit loopChanged(newLoop); }
     private:
         void _load();
         void _unload();
-        void _setLoop(uint newLoop);
-        void _setSamples(qint64 newSamples);
-        void _setTotalSamples(qint64 newTotalSamples);
         void _setState(MusicPlayerState newState);
-        size_t _fillBuffer(char* buffer, qint64 needSample);
-        qreal _fadeoutVolume(qint64 offset);
-        size_t _samplesToLoop(qint64& samples);
 
         QList<QueuedMusic> _queue;
-        MusicFile* _file;
-        qint64 _samples;
-        qint64 _totalSamples;
+        ThreadMusicFile* _file;
         MusicPlayerState _state;
+        QTimer _timer;
         uint _loop;
         uint _tickInterval;
-        uint _fadeoutTime;
-        qint64 _fadeoutSamples;
         bool _musicOver;
-};
-
-class MusicBufferThread : QThread
-{
-    Q_OBJECT
-    protected:
-        void run();
+        bool _emitAboutToFinish;
 };
 
 #endif // MUSICPLAYER_H

@@ -26,6 +26,8 @@ HEADERS      += ../include/mainwindow.h \
                 ../include/musicfile.h \
                 ../include/musicfile_wav.h \
                 ../include/musicfile_ogg.h \
+                ../include/loopmusicfile.h \
+                ../include/threadmusicfile.h \
                 ../include/musicdata.h \
                 ../include/loaderinterface.h
 SOURCES      += main.cpp \
@@ -37,19 +39,23 @@ SOURCES      += main.cpp \
                 musicfile.cpp \
                 musicfile_wav.cpp \
                 musicfile_ogg.cpp \
+                loopmusicfile.cpp \
+                threadmusicfile.cpp \
                 configdialog.cpp
 
 TRANSLATIONS = ../translations/touhou_musicplayer_zh_TW.ts
 
 win32 {
-    LIBS        += -LG:\portaudio\lib -lportaudio_x86 -LG:\libvorbis\lib -logg -lvorbis -lvorbisfile
-    INCLUDEPATH += G:\portaudio\include G:\libvorbis\include
+    LIBS        += -LC:\portaudio\lib -lportaudio_x86 -LC:\libogg\lib -logg -lvorbis -lvorbisfile
+    INCLUDEPATH += C:\portaudio\include C:\libogg\include
     CONFIG(debug, debug|release) {
         CONFIG += console
     }
 }
 
 unix {
+    #QMAKE_CXXFLAGS += -pg
+    #QMAKE_LFLAGS += -pg
     CONFIG    += link_pkgconfig
     PKGCONFIG += portaudio-2.0 vorbisfile
 }

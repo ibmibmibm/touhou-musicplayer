@@ -16,22 +16,20 @@
  */
 #ifndef MUSICFILE_WAV_H
 #define MUSICFILE_WAV_H
-#include <QFile>
-#include <QString>
 #include "musicfile.h"
 
 class MusicFile_Wav : public MusicFile
 {
     Q_OBJECT
+
+    protected:
+        MusicFile_Wav(const MusicData& fileDescription);
     public:
         typedef MusicFile::OpenMode OpenMode;
-
-        MusicFile_Wav(const QString& fileName);
-        MusicFile_Wav(const MusicData& fileDescription);
+        friend class MusicFileFactory;
         virtual ~MusicFile_Wav() {}
 
         virtual bool open(OpenMode mode);
-        virtual qint64 pos() const;
         virtual qint64 size() const;
         virtual bool seek(qint64 pos);
         virtual bool reset();
@@ -47,11 +45,9 @@ class MusicFile_Wav : public MusicFile
 
     protected:
         virtual qint64 readData(char * data, qint64 maxSize);
-        virtual qint64 writeData(const char * data, qint64 maxSize);
         void setErrorString(const QString & str);
         void setOpenMode(OpenMode openMode);
 
-        bool _readyReadWrite;
         _Endian _endian;
         uint _format;
         uint _bytespersec;
@@ -63,6 +59,9 @@ class MusicFile_Wav : public MusicFile
 
     private:
         bool _parseHeader();
+
+    public:
+        static MusicFile* createFunction(const MusicData& fileDescription) { return new MusicFile_Wav(fileDescription); }
 };
 
 #endif // MUSICFILE_WAV_H

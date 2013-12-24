@@ -16,20 +16,36 @@
  */
 #ifndef MUSICSAVER_H
 #define MUSICSAVER_H
-#include <QObject>
+#include <QString>
+#include <QStringList>
+#include <QHash>
 #include "musicdata.h"
+
+class MusicSaverFactory;
 
 class MusicSaver
 {
     public:
-        virtual bool save(const QString& filename, MusicData musicData, uint loop, uint fadeoutTime) = 0;
+        virtual bool save(const QString& filename, MusicData musicData, uint loop) = 0;
+        virtual QString suffix() = 0;
         virtual ~MusicSaver() {}
         QString errorString() const { return _errorString; }
     protected:
-        qreal fadeoutVolume(quint64 fadeoutSample, quint64 sample);
+        MusicSaver() {}
         void setErrorString(QString newErrorString) { _errorString = newErrorString; }
     private:
         QString _errorString;
+};
+
+class MusicSaverFactory
+{
+    public:
+        typedef MusicSaver* (*CreateFunction)();
+        static int registerMusicSaver(const QString& filterString, CreateFunction createFunction);
+        static MusicSaver* createMusicSaver(const QString& filterString);
+        static QStringList filterStringList();
+    private:
+        static QHash<QString, CreateFunction> functionHash;
 };
 
 #endif // MUSICSAVER_H

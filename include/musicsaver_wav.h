@@ -21,8 +21,10 @@
 class MusicSaver_Wav : public MusicSaver
 {
     public:
+        virtual bool save(const QString& filename, MusicData musicData, uint loop);
+        virtual QString suffix() { return ".wav"; }
         static QString filterString() { return QObject::tr("Uncompressed PCM (*.wav)"); }
-        virtual bool save(const QString& filename, MusicData musicData, uint loop, uint fadeoutTime);
+        static MusicSaver* createFunction() { return new MusicSaver_Wav(); }
 };
 
 #endif // MUSICSAVER_WAV_H

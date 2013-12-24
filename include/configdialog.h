@@ -16,19 +16,18 @@
  */
 #ifndef CONFIGDIALOG_H
 #define CONFIGDIALOG_H
-
 #include <QDialog>
-#include <QList>
-#include <QSize>
-#include <QTabWidget>
-#include <QDialogButtonBox>
-#include <QGridLayout>
-#include <QCheckBox>
 #include <QLabel>
 #include <QLineEdit>
+#include <QGridLayout>
+#include <QCheckBox>
 #include <QComboBox>
-#include "pluginloader.h"
-#include "musicplayer.h"
+#include <QSize>
+
+class QDialogButtonBox;
+class QTabWidget;
+class PluginLoader;
+class MusicPlayer;
 
 class GeneralConfigTab : public QWidget
 {

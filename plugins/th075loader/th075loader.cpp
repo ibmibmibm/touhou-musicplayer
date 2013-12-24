@@ -214,18 +214,6 @@ MusicData Th075Loader::at(uint index)
     );
 }
 
-QByteArray Th075Loader::content(uint index)
-{
-    Q_ASSERT(index < SongDataSize);
-    FileInfo info = info_list[index];
-
-    QFile file(dir.absoluteFilePath(FileName));
-    file.open(QIODevice::ReadOnly);
-
-    file.seek(info.offset);
-    return file.read(info.size);
-}
-
 void Th075Loader::close()
 {
     info_list.clear();

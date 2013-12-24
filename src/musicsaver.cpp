@@ -16,8 +16,22 @@
  */
 #include "musicsaver.h"
 
-qreal MusicSaver::fadeoutVolume(quint64 fadeoutSample, quint64 sample)
+QHash<QString, MusicSaverFactory::CreateFunction> MusicSaverFactory::functionHash;
+
+int MusicSaverFactory::registerMusicSaver(const QString& filterString, CreateFunction createFunction)
 {
-    qreal ret = static_cast<qreal>(fadeoutSample - sample) / static_cast<qreal>(fadeoutSample);
-    return ret * ret;
+    functionHash.insert(filterString, createFunction);
+    return functionHash.size();
+}
+
+MusicSaver* MusicSaverFactory::createMusicSaver(const QString& filterString)
+{
+    Q_ASSERT(functionHash.contains(filterString));
+    return functionHash.value(filterString)();
+}
+
+QStringList MusicSaverFactory::filterStringList()
+{
+    QStringList filterList(functionHash.keys());
+    return filterList;
 }

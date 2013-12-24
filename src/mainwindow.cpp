@@ -17,6 +17,12 @@
 #include <QApplication>
 #include <QSettings>
 #include <QTime>
+#include <QAction>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QLCDNumber>
+#include <QSpinBox>
+#include <QLabel>
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QMenuBar>
@@ -24,11 +30,12 @@
 #include <QToolBar>
 #include <QFileDialog>
 
+#include "pluginloader.h"
+#include "musicsaver.h"
 #include "mainwindow.h"
-#include "musicsaver_wav.h"
 
 namespace {
-    QString RepeatString(int life)
+    inline QString RepeatString(int life)
     {
         if (life > 10)
             return QString::fromWCharArray(L"\u2605 x %1").arg(life);
@@ -74,6 +81,19 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     musicPlayer->stop();
     musicPlayer->clearQueue();
+    {
+        QSettings settings;
+        settings.beginGroup("Playlist");
+        settings.beginWriteArray("Items");
+        for (int i = 0; i < musicDataList.size(); ++i)
+        {
+            settings.setArrayIndex(i);
+            settings.setValue("Visual Index", musicTable->verticalHeader()->visualIndex(i));
+            settings.setValue("Repeat", qobject_cast<QSpinBox*>(musicTable->cellWidget(i, 0))->value());
+        }
+        settings.endArray();
+        settings.endGroup();
+    }
     event->accept();
 }
 
@@ -82,32 +102,12 @@ void MainWindow::config()
     ConfigDialog(pluginLoader, musicPlayer, this).exec();
 }
 
-void MainWindow::insertMusic(const MusicData& musicData)
-{
-    musicDataList << musicData;
-
-    int r = musicTable->rowCount();
-    musicTable->insertRow(r);
-
-    QSpinBox *spin = new QSpinBox(this);
-    musicTable->setCellWidget(r, 0, spin);
-    spin->setValue(2);
-
-    QTableWidgetItem *titleItem = new QTableWidgetItem(musicData.title());
-    titleItem->setFlags(titleItem->flags() ^ Qt::ItemIsEditable);
-    musicTable->setItem(r, 1, titleItem);
-
-    QTableWidgetItem *albumItem = new QTableWidgetItem(musicData.album());
-    albumItem->setFlags(albumItem->flags() ^ Qt::ItemIsEditable);
-    musicTable->setItem(r, 2, albumItem);
-}
-
 void MainWindow::loadFile()
 {
     pluginLoader->clear();
 
-    QTime time;
-    time.restart();
+    //QTime time;
+    //time.restart();
     {
         QSettings settings;
 
@@ -126,31 +126,64 @@ void MainWindow::loadFile()
         settings.endArray();
         settings.endGroup();
     }
-    qDebug() << "Loading used " << time.elapsed() << " ms";
+    //qDebug() << "Loading used " << time.elapsed() << " ms";
 
-    time.restart();
+    //time.restart();
     musicPlayer->stop();
     musicDataList.clear();
     musicTable->setEnabled(false);
-    musicTable->setRowCount(0);
+    musicTable->setRowCount(pluginLoader->musicSize());
     qApp->processEvents();
-    qDebug() << "Cleaning used " << time.elapsed() << " ms";
+    //qDebug() << "Cleaning used " << time.elapsed() << " ms";
 
-    time.restart();
+    //time.restart();
     for (int i = 0; i < pluginLoader->musicSize(); ++i)
     {
-        insertMusic(pluginLoader->musicData(i));
+        const MusicData& musicData = pluginLoader->musicData(i);
+        int r = musicDataList.size();
+
+        musicDataList << musicData;
+
+        QSpinBox *spin = new QSpinBox(this);
+        musicTable->setCellWidget(r, 0, spin);
+        spin->setValue(2);
+
+        QTableWidgetItem *titleItem = new QTableWidgetItem(musicData.title());
+        titleItem->setFlags(titleItem->flags() ^ Qt::ItemIsEditable);
+        musicTable->setItem(r, 1, titleItem);
+
+        QTableWidgetItem *albumItem = new QTableWidgetItem(musicData.album());
+        albumItem->setFlags(albumItem->flags() ^ Qt::ItemIsEditable);
+        musicTable->setItem(r, 2, albumItem);
         if ((i & 15) == 0)
             qApp->processEvents();
     }
+    {
+        QSettings settings;
+        settings.beginGroup("Playlist");
+        int size = settings.beginReadArray("Items");
+        for (int i = 0; i < size && i < musicDataList.size(); ++i)
+        {
+            settings.setArrayIndex(i);
+            int visualIndex = settings.value("Visual Index", i).toInt();
+            int originalVisualIndex = musicTable->verticalHeader()->visualIndex(i);
+            if (originalVisualIndex != visualIndex)
+                musicTable->verticalHeader()->swapSections(originalVisualIndex, visualIndex);
+
+            int repeat = settings.value("Repeat", 2).toInt();
+            qobject_cast<QSpinBox*>(musicTable->cellWidget(i, 0))->setValue(repeat);
+        }
+        settings.endArray();
+        settings.endGroup();
+    }
     musicTable->setEnabled(true);
-    qDebug() << "Inserting used " << time.elapsed() << " ms";
+    //qDebug() << "Inserting used " << time.elapsed() << " ms";
 
     if (musicDataList.size())
     {
         musicTable->resizeRowsToContents();
         currentIndex = 0;
-        musicPlayer->setCurrentMusic(musicDataList.at(0), qobject_cast<QSpinBox*>(musicTable->cellWidget(0, 0))->value());
+        musicPlayer->setCurrentMusic(musicDataList.at(currentIndex), qobject_cast<QSpinBox*>(musicTable->cellWidget(0, 0))->value());
 
         nextAction->setEnabled(true);
         previousAction->setEnabled(true);
@@ -160,22 +193,17 @@ void MainWindow::loadFile()
 void MainWindow::saveFile()
 {
     QString filter;
-    QStringList filterList;
-    filterList << MusicSaver_Wav::filterString();
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save music file to..."), QString(), filterList.join(";;"), &filter);
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save music file to..."), QString(), MusicSaverFactory::filterStringList().join(";;"), &filter);
     if (!fileName.size())
         return;
 
     int id = musicTable->currentRow();
-    quint64 fadeoutTime;
+    MusicSaver* musicSaver = MusicSaverFactory::createMusicSaver(filter);
+    if (fileName.count('.') == 0 && !fileName.endsWith(musicSaver->suffix()))
     {
-        QSettings settings;
-        settings.beginGroup("Playback");
-        fadeoutTime = settings.value("Fadeout Time", 10000U).toUInt();
-        settings.endGroup();
+        fileName.append(musicSaver->suffix());
     }
-    MusicSaver* musicSaver = new MusicSaver_Wav;
-    if (!musicSaver->save(fileName, musicDataList.at(id), qobject_cast<QSpinBox*>(musicTable->cellWidget(id, 0))->value(), fadeoutTime))
+    if (!musicSaver->save(fileName, musicDataList.at(id), qobject_cast<QSpinBox*>(musicTable->cellWidget(id, 0))->value()))
         QMessageBox::warning(this, tr("Fatal Error"), musicSaver->errorString());
     delete musicSaver;
 }
@@ -244,7 +272,7 @@ void MainWindow::loopChanged(uint newLoop)
 
 void MainWindow::tick(qint64 samples)
 {
-    int time = samples * 0.02267573696145124716553287982 + 0.5;
+    int time = samples * 0.02267573696145124716553287982 + 0.5; // 1/44.1
     int msec = time % 1000;
     time /= 1000;
     int sec = time % 60;
@@ -259,7 +287,7 @@ void MainWindow::currentMusicChanged(const MusicData& musicData)
 {
     currentIndex = musicDataList.indexOf(musicData);
     musicTable->selectRow(currentIndex);
-    titleLabel->setText(QString("%1 %2").arg(musicDataList.at(currentIndex).title()).arg(RepeatString(musicPlayer->remainLoop())));
+    loopChanged(musicPlayer->loop());
     timeLcd->display("00:00.000");
 }
 
@@ -268,7 +296,7 @@ int MainWindow::getNewId(int offset)
     offset %= musicDataList.size();
     if (offset < 0)
         offset += musicDataList.size();
-    int ret = currentIndex;
+    int ret = musicTable->verticalHeader()->visualIndex(currentIndex);
     do
     {
         ret = (ret+offset) % musicDataList.size();
@@ -276,7 +304,7 @@ int MainWindow::getNewId(int offset)
             break;
     }
     while (qobject_cast<QSpinBox*>(musicTable->cellWidget(ret, 0))->value() == 0);
-    return ret;
+    return musicTable->verticalHeader()->logicalIndex(ret);
 }
 
 void MainWindow::aboutToFinish()
@@ -303,7 +331,6 @@ void MainWindow::musicChanged(int row, int /*column*/)
     musicPlayer->clearQueue();
 
     musicPlayer->setCurrentMusic(musicDataList.at(row), qobject_cast<QSpinBox*>(musicTable->cellWidget(row, 0))->value());
-    titleLabel->setText(QString("%1 %2").arg(musicDataList.at(currentIndex).title()).arg(RepeatString(musicPlayer->remainLoop())));
 
     musicPlayer->play();
 }
@@ -416,6 +443,8 @@ void MainWindow::setupUi()
     }
     musicTable->setSelectionMode(QAbstractItemView::SingleSelection);
     musicTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    musicTable->verticalHeader()->setMovable(true);
+    musicTable->horizontalHeader()->setMovable(true);
     connect(musicTable, SIGNAL(cellDoubleClicked(int, int)), this, SLOT(musicChanged(int, int)));
 
     QHBoxLayout *seekerLayout = new QHBoxLayout();

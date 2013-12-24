@@ -17,7 +17,6 @@
 #ifndef LOADERINTERFACE_H
 #define LOADERINTERFACE_H
 #include <QtPlugin>
-#include <QByteArray>
 #include "musicdata.h"
 
 class LoaderInterface
@@ -28,7 +27,6 @@ class LoaderInterface
         virtual bool open(const QString &) = 0;
         virtual void close() = 0;
         virtual MusicData at(uint index) = 0;
-        virtual QByteArray content(uint index) = 0;
         virtual uint size() const = 0;
 };
 Q_DECLARE_INTERFACE(LoaderInterface, "org.BestSteve.touhoumusicplayer.LoaderInterface/1.0")

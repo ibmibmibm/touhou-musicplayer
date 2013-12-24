@@ -18,7 +18,7 @@
 #define TH06LOADER_H
 #include <QObject>
 #include <QString>
-#include <QList>
+#include <QHash>
 #include <QDir>
 #include <QByteArray>
 #include "loaderinterface.h"
@@ -45,10 +45,9 @@ class Th07Loader : public QObject, public LoaderInterface
         bool open(const QString &);
         void close();
         MusicData at(uint index);
-        QByteArray content(uint index);
         uint size() const;
     private:
-        QList<FileInfo> info_list;
+        QHash<QString, FileInfo> info_hash;
         QDir dir;
 };
 

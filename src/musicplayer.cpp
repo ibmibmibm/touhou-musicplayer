@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <QtDebug>
 #include <QSettings>
 #include <portaudio.h>
 #include <cstring>
@@ -73,38 +74,35 @@ class _MusicPlayerImpl
             PaStreamCallbackFlags /*statusFlags*/)
         {
             //qDebug() << Q_FUNC_INFO << "framesPerBuffer" << framesPerBuffer;
-            size_t bufferSize = hook->_fillBuffer(static_cast<char*>(outputBuffer), framesPerBuffer);
+            Q_ASSERT(hook->_file != NULL);
+            memset(outputBuffer, 0, framesPerBuffer * hook->_file->blockwidth());
+            size_t bufferSamples = hook->_file->sampleRead(static_cast<char*>(outputBuffer), framesPerBuffer);
             //qDebug() << Q_FUNC_INFO << "bufferSize" << bufferSize;
-            if (bufferSize == 0)
-            {
-                memset(outputBuffer, 0, framesPerBuffer * hook->_file->blockwidth());
+            if (bufferSamples == 0)
                 return paComplete;
-            }
-            unsigned long samples = bufferSize / hook->_file->blockwidth();
             qint16 *outBuffer = static_cast<qint16*>(outputBuffer);
-            qreal fadeoutVolume;
-            for (unsigned long i = 0; i < samples; ++i)
+            if (volume == 1.0 && targetVolume == 1.0)
+                return paContinue;
+            for (unsigned long i = 0; i < bufferSamples; ++i)
             {
-                fadeoutVolume = hook->_fadeoutVolume(i);
                 for (size_t j = 0; j < hook->_file->channels(); ++j)
                 {
                     *outBuffer *= volume;
-                    *outBuffer *= fadeoutVolume;
                     ++outBuffer;
                 }
                 if (volume == targetVolume)
                     continue;
                 if (volume < targetVolume)
                 {
-                    if (volume <= targetVolume - 0.01)
-                        volume += 0.01;
+                    if (volume <= targetVolume - 0.0078125)
+                        volume += 0.0078125;
                     else
                         volume = targetVolume;
                 }
                 else if (volume > targetVolume)
                 {
-                    if (volume >= targetVolume + 0.01)
-                        volume -= 0.01;
+                    if (volume >= targetVolume + 0.0078125)
+                        volume -= 0.0078125;
                     else
                         volume = targetVolume;
                 }
@@ -122,77 +120,23 @@ class _MusicPlayerImpl
         }
 } _playerImpl;
 
-void MusicBufferThread::run()
-{
-}
-
 MusicPlayer::MusicPlayer() :
     _file(NULL),
-    _samples(0),
-    _totalSamples(0),
     _tickInterval(100)
 {
     Q_ASSERT(_playerImpl.hook == NULL);
     _playerImpl.hook = this;
-    QSettings settings;
-    settings.beginGroup("Playback");
-    _fadeoutTime = settings.value("Fadeout Time", 10000U).toUInt();
-    settings.endGroup();
     connect(this, SIGNAL(finish()), this, SLOT(_next()));
+    connect(&_timer, SIGNAL(timeout()), this, SLOT(_tick()));
     _setState(StoppedState);
 }
 
 MusicPlayer::~MusicPlayer()
 {
     //qDebug() << Q_FUNC_INFO;
-    stop();
+    pause();
     _unload();
     _playerImpl.hook = NULL;
-}
-
-size_t MusicPlayer::_fillBuffer(char* buffer, qint64 needSample)
-{
-    //qDebug() << Q_FUNC_INFO << needSample;
-    if (_musicOver)
-    {
-        //qDebug() << Q_FUNC_INFO << "_musicOver";
-        _setSamples(_totalSamples);
-        emit finish();
-        return 0;
-    }
-    qint64 realSamples = _samples;
-    _samplesToLoop(realSamples);
-    qint64 loopEnd = _file->loopEnd();
-    Q_ASSERT(realSamples < loopEnd);
-    qint64 targetSample = realSamples + needSample;
-    qint64 getSamples = 0;
-    if (loopEnd <= targetSample)
-    {
-        //qDebug() << Q_FUNC_INFO << "loop";
-        getSamples = _file->sampleRead(buffer, loopEnd - realSamples);
-        needSample -= getSamples;
-        _file->sampleSeek(_file->loopBegin());
-    }
-    getSamples += _file->sampleRead(buffer + getSamples * _file->blockwidth(), needSample);
-    //qDebug() << Q_FUNC_INFO << needSample << getSamples;
-    _setSamples(_samples + getSamples);
-    return getSamples * _file->blockwidth();
-}
-
-qreal MusicPlayer::_fadeoutVolume(qint64 offset)
-{
-    qint64 realSamples = _samples + offset;
-    size_t loop = _samplesToLoop(realSamples);
-    if (loop < _queue[0].loop)
-        return 1.0;
-    realSamples -= _file->loopBegin();
-    if (realSamples > _fadeoutSamples)
-    {
-        _musicOver = true;
-        return 0.0;
-    }
-    qreal fadeoutVolume = static_cast<qreal>(_fadeoutSamples - realSamples) / static_cast<qreal>(_fadeoutSamples);
-    return fadeoutVolume * fadeoutVolume;
 }
 
 void MusicPlayer::_load()
@@ -200,35 +144,19 @@ void MusicPlayer::_load()
     //qDebug() << Q_FUNC_INFO;
     if (!_file)
     {
-        Q_ASSERT(_file == NULL);
-        if (_queue[0].musicData.suffix() == ".ogg")
+        _file = new ThreadMusicFile(_queue.first().musicData, _queue.first().loop);
+        if (_file == NULL)
+            return;
+        if (!_file->open(QIODevice::ReadOnly))
         {
-            _file = new MusicFile_Ogg(_queue[0].musicData);
-            if (!_file->open(QIODevice::ReadOnly))
-            {
-                delete _file;
-                _file = NULL;
-                return;
-            }
-            //qDebug() << Q_FUNC_INFO << "MusicFile_Ogg";
+            delete _file;
+            _file = NULL;
+            return;
         }
-        else if (_queue[0].musicData.suffix() == ".wav")
-        {
-            _file = new MusicFile_Wav(_queue[0].musicData);
-            if (!_file->open(QIODevice::ReadOnly))
-            {
-                delete _file;
-                _file = NULL;
-                return;
-            }
-            //qDebug() << Q_FUNC_INFO << "MusicFile_Wav";
-        }
-        qint64 loopBegin =  _file->loopBegin();
-        qint64 loopSize = _file->loopEnd() - loopBegin;
-        _fadeoutSamples = _fadeoutTime * 44.1;
-        qint64 totalSamples = loopBegin + loopSize * _queue[0].loop + _fadeoutSamples;
-        _setTotalSamples(totalSamples);
-        _file->seek(0);
+        _loop = _file->loop();
+        emit totalSamplesChanged(_file->sampleSize());
+        emit loopChanged(_loop);
+        _emitAboutToFinish = false;
     }
 }
 
@@ -237,34 +165,32 @@ void MusicPlayer::_unload()
     //qDebug() << Q_FUNC_INFO;
     if (_file)
     {
-        _file->close();
         delete _file;
         _file = NULL;
     }
-    _setSamples(0);
 }
 
 void MusicPlayer::_next()
 {
     //qDebug() << Q_FUNC_INFO;
-    stop();
+    pause();
     _unload();
     _queue.removeFirst();
     if (_queue.size() == 0)
         return;
     _load();
-    currentMusicChanged(_queue[0].musicData);
     play();
+    currentMusicChanged(_queue.first().musicData);
 }
 
 void MusicPlayer::play()
 {
-    //qDebug() << Q_FUNC_INFO;
     MusicPlayerState s = state();
     if (s != StoppedState && s != PausedState)
         return;
     if (_queue.size() == 0)
         return;
+    //qDebug() << Q_FUNC_INFO;
     //qDebug() << Q_FUNC_INFO << "FileName" << _file->fileName();
     _setState(BufferingState);
     PaDeviceIndex deviceIndex;
@@ -275,6 +201,7 @@ void MusicPlayer::play()
         settings.endGroup();
     }
     //qDebug() << Q_FUNC_INFO << "Device name" << QString::fromLocal8Bit(Pa_GetDeviceInfo(deviceIndex)->name);
+    Q_ASSERT(_file != NULL);
     PaStreamParameters outputparam;
     outputparam.device = deviceIndex;
     outputparam.channelCount = _file->channels();
@@ -304,6 +231,7 @@ void MusicPlayer::play()
         return;
     }
     _setState(PlayingState);
+    _timer.start(1000/30);
 }
 
 void MusicPlayer::pause()
@@ -319,6 +247,7 @@ void MusicPlayer::pause()
         return;
     }
     _setState(PausedState);
+    _timer.stop();
 }
 
 void MusicPlayer::stop()
@@ -337,9 +266,17 @@ void MusicPlayer::stop()
             return;
         }
     }
-    _file->seek(0);
-    _setSamples(0);
+    _file->sampleSeek(0);
     _setState(StoppedState);
+    _timer.stop();
+}
+
+void MusicPlayer::seek(qint64 samples)
+{
+    //qDebug() << Q_FUNC_INFO;
+    MusicPlayerState s = state();
+    if (s == PlayingState || s == PausedState || s == StoppedState)
+        _file->sampleSeek(samples);
 }
 
 QString MusicPlayer::errorString() const
@@ -401,13 +338,11 @@ MusicPlayerErrorType MusicPlayer::errorType() const
 void MusicPlayer::setCurrentMusic(MusicData musicData, int loop)
 {
     //qDebug() << Q_FUNC_INFO;
-    stop();
+    pause();
     _unload();
     _setState(LoadingState);
     _queue.clear();
     _queue << QueuedMusic(musicData, loop);
-    _setLoop(0);
-    _setSamples(0);
     _load();
     _setState(StoppedState);
     currentMusicChanged(musicData);
@@ -422,34 +357,8 @@ void MusicPlayer::enqueue(const MusicData& musicData, int loop)
 void MusicPlayer::clearQueue()
 {
     //qDebug() << Q_FUNC_INFO;
-    stop();
+    pause();
     _queue.clear();
-}
-
-void MusicPlayer::seek(qint64 samples)
-{
-    qint64 realSamples = samples;
-    _samplesToLoop(realSamples);
-    //qDebug() << Q_FUNC_INFO << samples << realSamples;
-    _file->sampleSeek(realSamples);
-    _setSamples(samples);
-}
-
-
-size_t MusicPlayer::_samplesToLoop(qint64& samples)
-{
-    if (_queue.size() == 0)
-        return 0;
-    int loopEnd = _file->loopEnd();
-    int loopSize = loopEnd - _file->loopBegin();
-    Q_ASSERT(loopSize > 0);
-    int loop = 0;
-    while (samples >= loopEnd)
-    {
-        ++loop;
-        samples -= loopSize;
-    }
-    return loop;
 }
 
 void MusicPlayer::_setState(MusicPlayerState newState)
@@ -462,40 +371,30 @@ void MusicPlayer::_setState(MusicPlayerState newState)
     emit stateChanged(newState, oldState);
 }
 
-void MusicPlayer::_setLoop(uint newLoop)
+void MusicPlayer::_tick()
 {
-    if (_loop == newLoop)
+    if (_file == NULL)
         return;
-    //qDebug() << Q_FUNC_INFO << newLoop;
-    _loop = newLoop;
-    emit loopChanged(newLoop);
-    if (_queue.size() > 0 && _loop == _queue[0].loop)
+    qint64 samplePos = _file->samplePos();
+    //qDebug() << Q_FUNC_INFO << _file->bufferSize();
+    qint64 remainSample = _file->sampleSize() - samplePos;
+    if (remainSample <= 1024 && !_emitAboutToFinish)
     {
-        //qDebug() << Q_FUNC_INFO << "aboutToFinish";
+        _emitAboutToFinish = true;
         emit aboutToFinish();
     }
-}
-
-void MusicPlayer::_setSamples(qint64 newSamples)
-{
-    //qDebug() << Q_FUNC_INFO << newSamples;
-    if (_samples == newSamples)
-        return;
-    qint64 realSamples = _samples = newSamples;
-    int loop = _samplesToLoop(realSamples);
-    _musicOver = (_samples >= _totalSamples);
-    emit tick(newSamples);
-    _setLoop(loop);
-}
-
-void MusicPlayer::_setTotalSamples(qint64 newTotalSamples)
-{
-    //qDebug() << Q_FUNC_INFO << newTotalSamples;
-    if (_totalSamples == newTotalSamples)
-        return;
-    _totalSamples = newTotalSamples;
-    _musicOver = (_samples >= _totalSamples);
-    emit totalSamplesChanged(newTotalSamples);
+    emit tick(samplePos);
+    uint loop = _file->loop();
+    if (_loop != loop)
+    {
+        _loop = loop;
+        emit loopChanged(_loop);
+    }
+    // _file maybe NULL after emit finish, so we do it finally.
+    if (remainSample == 0)
+    {
+        emit finish();
+    }
 }
 
 qreal MusicPlayer::volume() const
@@ -506,7 +405,6 @@ qreal MusicPlayer::volume() const
 
 void MusicPlayer::setVolume(qreal newVolume)
 {
-    //qDebug() << Q_FUNC_INFO;
     _playerImpl.targetVolume = newVolume;
 }
 

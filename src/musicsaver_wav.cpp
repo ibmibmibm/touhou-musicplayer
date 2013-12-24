@@ -14,48 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <QFile>
 #include <QtEndian>
 #include "musicsaver_wav.h"
-#include "musicfile_ogg.h"
-#include "musicfile_wav.h"
+#include "loopmusicfile.h"
 
-bool MusicSaver_Wav::save(const QString& filename, MusicData musicData, uint loop, uint fadeoutTime)
+bool MusicSaver_Wav::save(const QString& filename, MusicData musicData, uint loop)
 {
-    MusicFile* musicFile;
-    if (musicData.suffix() == ".ogg")
-    {
-        musicFile = new MusicFile_Ogg(musicData);
-        if (!musicFile->open(QIODevice::ReadOnly))
-        {
-            setErrorString(musicFile->errorString());
-            delete musicFile;
-            return false;
-        }
-    }
-    else if (musicData.suffix() == ".wav")
-    {
-        musicFile = new MusicFile_Wav(musicData);
-        if (!musicFile->open(QIODevice::ReadOnly))
-        {
-            setErrorString(musicFile->errorString());
-            delete musicFile;
-            return false;
-        }
-    }
-    else
+    //qDebug() << Q_FUNC_INFO;
+
+    LoopMusicFile* musicFile = new LoopMusicFile(musicData, loop);
+
+    if (musicFile == NULL)
         return false;
-    qint64 fadeoutSample = (static_cast<qint64>(fadeoutTime) * musicFile->samplerate()) * 0.001;
-    if (fadeoutSample > (musicFile->loopEnd() - musicFile->loopBegin()))
+
+    if (!musicFile->open(QIODevice::ReadOnly))
     {
-        setErrorString(QObject::tr("Fadeout time is too long."));
-        delete musicFile;
-        return false;
-    }
-    quint64 fadeoutSize = fadeoutSample * musicFile->blockwidth();
-    quint64 size = (musicFile->loopBegin() + (musicFile->loopEnd() - musicFile->loopBegin()) * loop) * musicFile->blockwidth() + fadeoutSize;
-    if (size > Q_UINT64_C(4294967295))
-    {
-        setErrorString(QObject::tr("Repeat value is too large."));
+        setErrorString(musicFile->errorString());
         delete musicFile;
         return false;
     }
@@ -68,10 +43,18 @@ bool MusicSaver_Wav::save(const QString& filename, MusicData musicData, uint loo
         return false;
     }
 
+    quint64 totalSize = musicFile->sampleSize() * musicFile->blockwidth();
+    if (totalSize > (Q_UINT64_C(4294967295) - Q_UINT64_C(36)))
+    {
+        setErrorString(QObject::tr("Repeat value is too large."));
+        delete musicFile;
+        return false;
+    }
+
     quint32 int32;
     quint16 int16;
     file.write("RIFF");
-    int32 = qToLittleEndian<qint32>(size + 36u);
+    int32 = qToLittleEndian<qint32>(totalSize + 36u);
     file.write(reinterpret_cast<const char*>(&int32), 4);
     file.write("WAVEfmt ");
     int32 = qToLittleEndian<qint32>(16u);
@@ -97,32 +80,15 @@ bool MusicSaver_Wav::save(const QString& filename, MusicData musicData, uint loo
     file.write(reinterpret_cast<const char*>(&int16), 2);
 
     file.write("data");
-    int32 = qToLittleEndian<qint32>(size);
+    int32 = qToLittleEndian<qint32>(totalSize);
     file.write(reinterpret_cast<const char*>(&int32), 4);
 
+    const qint64 bufferSample = 65536;
     musicFile->sampleSeek(0);
-    file.write(musicFile->read(musicFile->loopBegin() * musicFile->blockwidth()));
-    for (uint i = 0; i < loop; ++i)
-    {
-        file.write(musicFile->read((musicFile->loopEnd() - musicFile->loopBegin()) * musicFile->blockwidth()));
-        musicFile->sampleSeek(musicFile->loopBegin());
-    }
-    QByteArray fadeoutData = musicFile->read(fadeoutSize);
-
-    qint16 *out = reinterpret_cast<qint16*>(fadeoutData.data());
-    for (qint64 i = 0; i < fadeoutSample; ++i)
-    {
-        qreal volume = fadeoutVolume(fadeoutSample, i);
-        for (uint j = 0; j < musicFile->channels(); ++j)
-        {
-            *out *= volume;
-            ++out;
-        }
-    }
-    musicFile->close();
+    while (file.write(musicFile->sampleRead(bufferSample)) > 0)
+        ;
+    file.close();
     delete musicFile;
     musicFile = NULL;
-    file.write(fadeoutData);
-    file.close();
     return true;
 }

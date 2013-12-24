@@ -14,14 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <QFSFileEngine>
+#include <QtDebug>
 #include "musicfile.h"
-
-MusicFile::MusicFile(const QString& fileName) :
-    _fileName(fileName),
-    _fileEngine(QAbstractFileEngine::create(_fileName))
-{
-    //qDebug() << Q_FUNC_INFO << fileName;
-}
 
 MusicFile::MusicFile(const MusicData& fileDescription) :
     _loop(fileDescription.loop()),
@@ -75,12 +70,6 @@ bool MusicFile::open(OpenMode mode)
     return _fileEngine->open(mode) && QIODevice::open(mode);
 }
 
-qint64 MusicFile::pos() const
-{
-    //qDebug() << Q_FUNC_INFO;
-    return _pos();
-}
-
 qint64 MusicFile::_pos() const
 {
     if (_archiveMusicData.data() == NULL)
@@ -109,16 +98,24 @@ qint64 MusicFile::_size() const
 bool MusicFile::seek(qint64 pos)
 {
     //qDebug() << Q_FUNC_INFO;
-    return _seek(pos);
+    return QIODevice::seek(pos) && _seek(pos);
 }
 
 bool MusicFile::_seek(qint64 pos)
 {
     //qDebug() << Q_FUNC_INFO << "pos" << pos;
-    Q_ASSERT(pos >= 0);
+    if (pos < 0)
+    {
+        qWarning() << Q_FUNC_INFO << ": try to seek to " << pos << ", a negative position.";
+        return false;
+    }
     if (_archiveMusicData.data() == NULL)
         return _fileEngine->seek(pos);
-    Q_ASSERT(pos <= _archiveMusicData->dataEnd - _archiveMusicData->dataBegin);
+    if (pos > _archiveMusicData->dataEnd - _archiveMusicData->dataBegin)
+    {
+        qWarning() << Q_FUNC_INFO << ": try to seek to " << pos << ", a invalid position.";
+        return false;
+    }
     //qDebug() << Q_FUNC_INFO << "adjected" << _archiveMusicData->dataBegin + pos;
     return _fileEngine->seek(_archiveMusicData->dataBegin + pos);
 }
@@ -142,17 +139,16 @@ bool MusicFile::_reset()
 
 qint64 MusicFile::readData(char* data, qint64 maxSize)
 {
+    //qDebug() << Q_FUNC_INFO << "maxSize" << maxSize;
     return _readData(data, maxSize);
 }
 
 qint64 MusicFile::_readData(char* data, qint64 maxSize)
 {
-    //qDebug() << Q_FUNC_INFO << "maxSize" << maxSize;
     if (_archiveMusicData.data() == NULL)
         return _fileEngine->read(data, maxSize);
     //qDebug() << Q_FUNC_INFO << "_fileEngine->pos()" << _fileEngine->pos() << "_archiveMusicData->dataEnd" << _archiveMusicData->dataEnd;
-    if (maxSize > _archiveMusicData->dataEnd - _fileEngine->pos())
-        maxSize = _archiveMusicData->dataEnd - _fileEngine->pos();
+    maxSize = qMin(maxSize, _archiveMusicData->dataEnd - _fileEngine->pos());
     //qDebug() << Q_FUNC_INFO << "adjected" << maxSize;
     if (maxSize <= 0)
         return 0;
@@ -167,18 +163,17 @@ qint64 MusicFile::_readData(char* data, qint64 maxSize)
     return result;
 }
 
-qint64 MusicFile::writeData(const char* data, qint64 maxSize)
+QHash<QString, MusicFileFactory::CreateFunction> MusicFileFactory::functionHash;
+
+int MusicFileFactory::registerMusicFile(const QString& suffix, CreateFunction createFunction)
 {
-    return _writeData(data, maxSize);
+    functionHash.insert(suffix, createFunction);
+    return functionHash.size();
 }
 
-qint64 MusicFile::_writeData(const char* data, qint64 maxSize)
+MusicFile* MusicFileFactory::createMusicFile(const MusicData& fileDescription)
 {
-    if (_archiveMusicData.data() == NULL)
-        return _fileEngine->write(data, maxSize);
-    if (maxSize > _archiveMusicData->dataEnd - _fileEngine->pos())
-        maxSize = _archiveMusicData->dataEnd - _fileEngine->pos();
-    if (_archiveMusicData->encoder == NULL)
-        return _fileEngine->write(data, maxSize);
-    return _fileEngine->write(data, maxSize);
+    const QString& suffix = fileDescription.suffix();
+    Q_ASSERT(functionHash.contains(suffix));
+    return functionHash.value(suffix)(fileDescription);
 }

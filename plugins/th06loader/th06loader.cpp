@@ -172,15 +172,6 @@ MusicData Th06Loader::at(uint index)
     );
 }
 
-QByteArray Th06Loader::content(uint index)
-{
-    Q_ASSERT(index < SongDataSize);
-    QFile file(dir.absoluteFilePath(WavName.arg(index + 1, 2, 10, QLatin1Char('0'))));
-    file.open(QIODevice::ReadOnly);
-
-    return file.readAll();
-}
-
 void Th06Loader::close()
 {
     data.clear();

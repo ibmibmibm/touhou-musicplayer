@@ -38,9 +38,7 @@ struct _MusicFile_OggCore
     void close();
     qint64 size();
     bool seek(qint64 pos);
-    qint64 pos();
     qint64 readData(char* data, qint64 maxSize);
-    qint64 writeData(const char* data, qint64 maxSize);
     size_t _read(void* ptr, size_t size, size_t nmemb);
     int _seek(qint64 offset, int whence);
     int _close();
@@ -175,32 +173,8 @@ bool _MusicFile_OggCore::seek(qint64 pos)
             //qDebug() << Q_FUNC_INFO << "OV_EBADLINK";
             return false;
     }
-    /*int currpos = this->pos();
-    if (currpos < pos)
-    {
-        char *buf = new char[pos - currpos];
-        this->readData(buf, pos - currpos);
-        delete [] buf;
-    }*/
     //qDebug() << Q_FUNC_INFO << "result" << this->pos() * shell->_blockwidth;
     return true;
-}
-
-qint64 _MusicFile_OggCore::pos()
-{
-    //qDebug() << Q_FUNC_INFO;
-    mutex.lock();
-    qint64 result = ov_pcm_tell(&file);
-    mutex.unlock();
-    switch (result)
-    {
-        case OV_EINVAL:
-            //qDebug() << Q_FUNC_INFO << "OV_EINVAL";
-            return false;
-        default:
-            break;
-    }
-    return result;
 }
 
 qint64 _MusicFile_OggCore::readData(char* data, qint64 maxSize)
@@ -233,21 +207,12 @@ qint64 _MusicFile_OggCore::readData(char* data, qint64 maxSize)
     return size;
 }
 
-qint64 _MusicFile_OggCore::writeData(const char* /*data*/, qint64 /*maxSize*/)
-{
-    return -1;
-}
-
 size_t _MusicFile_OggCore::_read(void* ptr, size_t size, size_t nmemb)
 {
     Q_ASSERT(shell != NULL);
     //qDebug() << Q_FUNC_INFO << size << nmemb;
-    /*qint64 pos = shell->_pos();*/
     qint64 result = shell->_readData(static_cast<char*>(ptr), size * nmemb);
     //qDebug() << Q_FUNC_INFO << result;
-    /* let QIODevice know the change */
-    /*if (result > 0)
-        shell->_seek(pos + result);*/
     return result;
 }
 
@@ -279,13 +244,6 @@ long _MusicFile_OggCore::_tell()
 
 
 
-MusicFile_Ogg::MusicFile_Ogg(const QString& fileName) :
-    MusicFile(fileName),
-    _core(new _MusicFile_OggCore(this))
-{
-    //qDebug() << Q_FUNC_INFO << fileName;
-}
-
 MusicFile_Ogg::MusicFile_Ogg(const MusicData& fileDescription) :
     MusicFile(fileDescription),
     _core(new _MusicFile_OggCore(this))
@@ -310,10 +268,6 @@ bool MusicFile_Ogg::open(OpenMode mode)
         goto err;
     if (!_core->open())
         goto err;
-    if (_loopEnd == 3724704)
-    {
-        //qDebug() << fileName();
-    }
     return true;
 err:
     MusicFile::close();
@@ -330,22 +284,16 @@ void MusicFile_Ogg::close()
     MusicFile::close();
 }
 
-qint64 MusicFile_Ogg::pos() const
-{
-    //qDebug() << Q_FUNC_INFO;
-    return _core->pos();
-}
-
 qint64 MusicFile_Ogg::size() const
 {
     //qDebug() << Q_FUNC_INFO;
-    return _core->size();
+    return _core->size() * _blockwidth;
 }
 
 bool MusicFile_Ogg::seek(qint64 pos)
 {
     //qDebug() << Q_FUNC_INFO;
-    return _core->seek(pos);
+    return _core->seek(pos) && QIODevice::seek(pos);
 }
 
 bool MusicFile_Ogg::reset()
@@ -358,10 +306,4 @@ qint64 MusicFile_Ogg::readData(char* data, qint64 maxSize)
 {
     //qDebug() << Q_FUNC_INFO;
     return _core->readData(data, maxSize);
-}
-
-qint64 MusicFile_Ogg::writeData(const char* data, qint64 maxSize)
-{
-    //qDebug() << Q_FUNC_INFO;
-    return _core->writeData(data, maxSize);
 }

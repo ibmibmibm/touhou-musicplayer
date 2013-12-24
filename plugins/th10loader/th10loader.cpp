@@ -240,33 +240,6 @@ MusicData Th10Loader::at(uint index)
     );
 }
 
-QByteArray Th10Loader::content(uint index)
-{
-    Q_ASSERT(index < SongDataSize);
-    FileInfo info = info_hash.value(WavName.arg(SongData[index][0]));
-    QFile file(dir.filePath(BgmName));
-    file.open(QIODevice::ReadOnly);
-    file.seek(info.offset);
-    int x;
-    QByteArray wav("RIFF");
-    QByteArray xdata(4, '\0');
-    x = info.size + 36;
-    setUInt32(x, xdata.data());
-    wav.append(xdata);
-    wav.append("WAVEfmt ");
-    x = 16;
-    setUInt32(x, xdata.data());
-    wav.append(xdata);
-    wav.append(info.header);
-    wav.append("data");
-    x = info.size;
-    setUInt32(x, xdata.data());
-    wav.append(xdata);
-    wav.append(file.read(info.size));
-
-    return wav;
-}
-
 void Th10Loader::close()
 {
     info_hash.clear();

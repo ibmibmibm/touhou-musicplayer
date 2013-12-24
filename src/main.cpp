@@ -21,11 +21,12 @@
 #include <QLocale>
 #include <QLibraryInfo>
 
-#include <QtDebug>
-
 #include "mainwindow.h"
+#include "musicfile_ogg.h"
+#include "musicfile_wav.h"
+#include "musicsaver_wav.h"
 
-const uint VERSION = 0x00040000;
+const uint VERSION = 0x00050000;
 
 void updateSettings()
 {
@@ -62,14 +63,23 @@ void updateSettings()
                 settings.endGroup();
                 prevVersion = 0x00030001;
             }
-        case 0x0003001:
+        case 0x00030001:
             prevVersion = 0x00040000;
+        case 0x00040000:
+            prevVersion = 0x00050000;
             break;
         default:
             qWarning("Unknow version.");
             settings.clear();
     }
     settings.setValue(QLatin1String("Version"), VERSION);
+}
+
+void initialFactories()
+{
+    MusicFileFactory::registerMusicFile(".ogg", MusicFile_Ogg::createFunction);
+    MusicFileFactory::registerMusicFile(".wav", MusicFile_Wav::createFunction);
+    MusicSaverFactory::registerMusicSaver(MusicSaver_Wav::filterString(), MusicSaver_Wav::createFunction);
 }
 
 int main(int argv, char **args)
@@ -97,6 +107,7 @@ int main(int argv, char **args)
     app.installTranslator(&qtTranslator);
 
     updateSettings();
+    initialFactories();
 
     MainWindow window;
     window.show();

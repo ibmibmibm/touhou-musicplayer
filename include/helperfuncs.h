@@ -16,48 +16,7 @@
  */
 #ifndef HELPERFUNCS_H
 #define HELPERFUNCS_H
-
 #include <QtEndian>
-/*
-inline quint8 getUInt8(const char *cursor)
-{
-    return *cursor;
-}
-
-inline quint16 getUInt16(const char *cursor)
-{
-    return qFromLittleEndian<qint16>(reinterpret_cast<const uchar*>(cursor));
-}
-
-inline quint32 getUInt32(const char *cursor)
-{
-    return qFromLittleEndian<qint32>(reinterpret_cast<const uchar*>(cursor));
-}
-*/
-inline quint64 getUInt64(const char *cursor)
-{
-    return qFromLittleEndian<qint64>(reinterpret_cast<const uchar*>(cursor));
-}
-
-inline void setUInt8(quint8 value, char *cursor)
-{
-    *cursor = value;
-}
-
-inline void setUInt16(quint16 value, char *cursor)
-{
-    qToLittleEndian<qint16>(value, reinterpret_cast<uchar*>(cursor));
-}
-
-inline void setUInt32(quint32 value, char *cursor)
-{
-    qToLittleEndian<qint32>(value, reinterpret_cast<uchar*>(cursor));
-}
-
-inline void setUInt64(quint64 value, char *cursor)
-{
-    qToLittleEndian<qint64>(value, reinterpret_cast<uchar*>(cursor));
-}
 
 struct ThbgmData
 {
@@ -147,7 +106,7 @@ class ChecksumBitReader : public BitReader
         uint sum;
 };
 
-inline QByteArray lzDecompress(const QByteArray& compressed, int decompressdSize = 0)
+QByteArray lzDecompress(const QByteArray& compressed, int decompressdSize = 0)
 {
     QByteArray decompressd;
     decompressd.reserve(decompressdSize);
@@ -181,7 +140,7 @@ inline QByteArray lzDecompress(const QByteArray& compressed, int decompressdSize
     }
 }
 
-inline QByteArray lzDecompressChechsum(int& checksum, const QByteArray& compressed, int decompressdSize)
+QByteArray lzDecompressChechsum(int& checksum, const QByteArray& compressed, int decompressdSize)
 {
     QByteArray decompressd;
     decompressd.reserve(decompressdSize);
@@ -218,7 +177,7 @@ inline QByteArray lzDecompressChechsum(int& checksum, const QByteArray& compress
     }
 }
 
-inline QByteArray lzDecompressDictSize(const QByteArray& compressed, size_t dictSize, int decompressdSize = 0)
+QByteArray lzDecompressDictSize(const QByteArray& compressed, size_t dictSize, int decompressdSize = 0)
 {
     QByteArray decompressd;
     decompressd.reserve(decompressdSize);

@@ -22,26 +22,28 @@ struct _MusicFile_OggCore;
 class MusicFile_Ogg : public MusicFile
 {
     Q_OBJECT
+
+    protected:
+        MusicFile_Ogg(const MusicData& fileDescription);
     public:
         typedef MusicFile::OpenMode OpenMode;
-
-        MusicFile_Ogg(const QString& fileName);
-        MusicFile_Ogg(const MusicData& fileDescription);
+        friend class MusicFileFactory;
         virtual ~MusicFile_Ogg();
 
         virtual bool open(OpenMode mode);
         virtual void close();
-        virtual qint64 pos() const;
         virtual qint64 size() const;
         virtual bool seek(qint64 pos);
         virtual bool reset();
 
     protected:
         virtual qint64 readData(char* data, qint64 maxSize);
-        virtual qint64 writeData(const char* data, qint64 maxSize);
 
         friend struct _MusicFile_OggCore;
         _MusicFile_OggCore* _core;
+
+    public:
+        static MusicFile* createFunction(const MusicData& fileDescription) { return new MusicFile_Ogg(fileDescription); }
 };
 
 #endif // MUSICFILE_OGG_H

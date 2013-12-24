@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <QDialogButtonBox>
+#include <QTabWidget>
+
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QGroupBox>
@@ -22,7 +25,8 @@
 #include <QStyle>
 #include <QPushButton>
 #include <QSettings>
-#include <QtDebug>
+#include "pluginloader.h"
+#include "musicplayer.h"
 #include "configdialog.h"
 
 GeneralConfigTab::GeneralConfigTab(int pluginCount_, QWidget *parent) :

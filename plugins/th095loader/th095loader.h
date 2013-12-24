@@ -45,7 +45,6 @@ class Th095Loader : public QObject, public LoaderInterface
         bool open(const QString &);
         void close();
         MusicData at(uint index);
-        QByteArray content(uint index);
         uint size() const;
     private:
         QHash<QString, FileInfo> info_hash;

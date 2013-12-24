@@ -17,22 +17,25 @@
 #ifndef MUSICFILE_H
 #define MUSICFILE_H
 #include <QIODevice>
-#include <QFSFileEngine>
 #include <QString>
-#include <QtDebug>
+#include <QHash>
 #include "musicdata.h"
+
+class QAbstractFileEngine;
+class MusicFileFactory;
 
 class MusicFile : public QIODevice
 {
     Q_OBJECT
 
+    protected:
+        MusicFile();
+        MusicFile(const MusicData& fileDescription);
+
 /* outer layer */
     public:
-        typedef QFile::OpenMode OpenMode;
+        typedef QIODevice::OpenMode OpenMode;
 
-        MusicFile();
-        MusicFile(const QString& fileName);
-        MusicFile(const MusicData& fileDescription);
         virtual ~MusicFile() {}
 
         const QString& fileName() const;
@@ -49,16 +52,15 @@ class MusicFile : public QIODevice
         void setAlbum(QString newAlbum) { _album = newAlbum; }
 
         virtual bool open(OpenMode mode);
-        virtual qint64 pos() const;
         virtual qint64 size() const;
         virtual bool seek(qint64 pos);
         virtual bool reset();
         virtual qint64 bytesAvailable() const { return size(); }
 
-        qint64 samplePos() const { return pos() * _blockwidth; }
-        qint64 sampleSize() const { return size() * _blockwidth; }
-        bool sampleSeek(qint64 pos) { return seek(pos * _blockwidth); }
-        qint64 sampleRead(char* buffer, qint64 maxSize) { return read(buffer, maxSize * _blockwidth) / _blockwidth; }
+        virtual qint64 samplePos() const { return pos() / _blockwidth; }
+        virtual qint64 sampleSize() const { return size() / _blockwidth; }
+        virtual bool sampleSeek(qint64 pos) { return seek(pos * _blockwidth); }
+        virtual qint64 sampleRead(char* buffer, qint64 maxSize) { return read(buffer, maxSize * _blockwidth) / _blockwidth; }
 
         uint channels() const { return _channels; }
         uint samplerate() const { return _samplerate; }
@@ -69,7 +71,7 @@ class MusicFile : public QIODevice
 /* middle layer */
     protected:
         virtual qint64 readData(char* data, qint64 maxSize);
-        virtual qint64 writeData(const char* data, qint64 maxSize);
+        virtual qint64 writeData(const char*, qint64) { Q_ASSERT(false); return -1; }
         void setErrorString(const QString & str);
         void setOpenMode(OpenMode openMode);
 
@@ -99,6 +101,16 @@ class MusicFile : public QIODevice
         QAbstractFileEngine* _fileEngine;
         MusicFile(const MusicFile&);
         MusicFile& operator=(const MusicFile&);
+};
+
+class MusicFileFactory
+{
+    public:
+        typedef MusicFile* (*CreateFunction)(const MusicData&);
+        static int registerMusicFile(const QString& suffix, CreateFunction createFunction);
+        static MusicFile* createMusicFile(const MusicData& fileDescription);
+    private:
+        static QHash<QString, CreateFunction> functionHash;
 };
 
 #endif // MUSICFILE_H

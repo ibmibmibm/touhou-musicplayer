@@ -16,21 +16,19 @@
  */
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-
 #include <QMainWindow>
-#include <QHash>
 #include <QList>
-#include <QAction>
-#include <QTableWidget>
-#include <QLCDNumber>
-#include <QRadioButton>
-#include <QSpinBox>
-#include <QLabel>
 
-#include "pluginloader.h"
 #include "musicplayer.h"
 #include "configdialog.h"
 #include "musicdata.h"
+
+class QAction;
+class QTableWidget;
+class QLCDNumber;
+class QLabel;
+
+class PluginLoader;
 
 class MainWindow : public QMainWindow
 {
@@ -62,11 +60,10 @@ class MainWindow : public QMainWindow
         void aboutToFinish();
         void musicChanged(int row, int = 0);
         void seek(int newValue) { musicPlayer->seek(newValue); }
-        void setVolume(int newVolume) { musicPlayer->setVolume(newVolume * 0.01); }
-        void setVolume(qreal newVolume) { volumeSlider->setValue(newVolume * 100.0); }
+        void setVolume(int newVolume) { musicPlayer->setVolume(newVolume * 0.0078125); }
+        void setVolume(qreal newVolume) { volumeSlider->setValue(newVolume * 128.0); }
 
     private:
-        void insertMusic(const MusicData& musicData);
         int getNewId(int offset);
         void setupActions();
         void setupMenus();
