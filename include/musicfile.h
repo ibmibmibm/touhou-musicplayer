@@ -34,27 +34,22 @@ class MusicFile
                 MusicFileData(const MusicFileData &other);
                 MusicFileData&operator=(const MusicFileData &other);
             public:
-                MusicFileData(const MusicData& data, const QString path):
+                MusicFileData():
+                    title(),
+                    album(),
+                    fileName(),
+                    loop(false),
+                    loopStart(0),
+                    loopEnd(0)
+                {}
+                MusicFileData(const MusicData& data):
                     title(data.title),
                     album(data.album),
+                    fileName(data.fileName),
                     loop(data.loop),
                     loopStart(data.loopStart),
                     loopEnd(data.loopEnd)
-                {
-                    QDir dir(path);
-                    dir.mkpath(album);
-                    QDir adir(dir.filePath(album));
-                    fileName = adir.filePath(data.title + data.suffix);
-                    QFile file(fileName);
-                    if (file.size() != data.content.size())
-                    {
-                        if (!file.open(QIODevice::WriteOnly))
-                            return;
-                        file.write(data.content);
-                        file.close();
-                    }
-                    qDebug() << fileName;
-                }
+                {}
                 QString title;
                 QString album;
                 QString fileName;
@@ -63,19 +58,23 @@ class MusicFile
                 uint loopEnd;
         };
     public:
-        MusicFile(const MusicData& data, const QString& path) :
-            data(new MusicFileData(data, path))
+        MusicFile() :
+            data(new MusicFileData())
+        {}
+        MusicFile(const MusicData& data) :
+            data(new MusicFileData(data))
             {}
         bool isLoop() const { return this->data->loop; }
         uint loopStart() const { return this->data->loopStart; }
         uint loopEnd() const { return this->data->loopEnd; }
-        Phonon::MediaSource source() const { return Phonon::MediaSource(this->data->fileName); }
         const QString& title() const { return this->data->title; }
         void setTitle(const QString& title) { this->data->title = title; }
         const QString& album() const { return this->data->album; }
         void setAlbum(const QString& album) { this->data->album = album; }
+        const QString& fileName() const { return this->data->fileName; }
+        void setFileName(const QString& fileName) { this->data->fileName = fileName; }
+        bool operator==(const MusicFile& right) { return data == right.data; }
     private:
-        MusicFile();
         QExplicitlySharedDataPointer<MusicFileData> data;
 };
 

@@ -17,10 +17,20 @@
 #ifndef TH105LOADER_H
 #define TH105LOADER_H
 #include <QObject>
+#include <QDir>
 #include <QString>
-#include <QHash>
+#include <QList>
 #include <QByteArray>
 #include "loaderinterface.h"
+
+struct FileInfo
+{
+    uint offset;
+    uint size;
+    bool loop;
+    uint loopStart;
+    uint loopEnd;
+};
 
 class Th105Loader : public QObject, public LoaderInterface
 {
@@ -33,9 +43,11 @@ class Th105Loader : public QObject, public LoaderInterface
         bool open(const QString &);
         void close();
         MusicData at(uint index);
+        QByteArray content(uint index);
         uint size() const;
     private:
-        QHash<QString, QByteArray> data;
+        QList<FileInfo> info_list;
+        QDir dir;
 };
 
 #endif //TH105LOADER_H

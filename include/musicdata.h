@@ -21,19 +21,20 @@
 
 struct MusicData
 {
-    MusicData(QByteArray _content, QString _suffix, QString _title, QString _album, bool _loop, uint _loopStart, uint _loopEnd) :
-        content(_content),
+    MusicData(QString _suffix, QString _title, QString _album, int _size, bool _loop, uint _loopStart, uint _loopEnd) :
         suffix(_suffix),
         title(_title),
         album(_album),
+        size(_size),
         loop(_loop),
         loopStart(_loopStart),
         loopEnd(_loopEnd)
         {}
-    QByteArray content;
+    QString fileName;
     QString suffix;
     QString title;
     QString album;
+    int size;
     bool loop;
     uint loopStart;
     uint loopEnd;

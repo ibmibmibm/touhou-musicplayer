@@ -47,9 +47,9 @@ namespace {
         QString::fromWCharArray(L"\u7d05\u697c\u3000\u301c Eastern Dream..."),
     };
     const int SongDataSize = sizeof(SongData) / sizeof(SongData[0]);
-    const QString FileName = QString::fromWCharArray(L"\u7d05\u9b54\u90f7MD.DAT");
-    const QString WavName = "bgm/th06_%1.wav";
-    const QString PosName = "th06_%1.pos";
+    const QString FileName(QString::fromWCharArray(L"\u7d05\u9b54\u90f7MD.DAT"));
+    const QString WavName("bgm/th06_%1.wav");
+    const QString PosName("th06_%1.pos");
 
     struct FileInfo
     {
@@ -71,14 +71,9 @@ namespace {
             {}
             bool getBit()
             {
-//                qDebug() << "getBit:0x" + QString::number(static_cast<unsigned char>(data[pos]), 16);
                 if (pos >= size)
-                {
-                    qDebug() << "Error!";
                     return false;
-                }
                 bool ret = (static_cast<unsigned char>(data[pos]) & bitPos);
-//                qDebug() << "getBit:" << ret;
                 bitPos >>= 1;
                 if (!bitPos)
                 {
@@ -98,7 +93,6 @@ namespace {
                         ret |= mask;
                     mask >>= 1;
                 }
-//                qDebug() << "getBits:" << ret;
                 return ret;
             }
             uint getUInt32()
@@ -202,18 +196,17 @@ bool Th06Loader::open(const QString &path)
     QList<FileInfo> info_list;
     {
 // Stage 2
-        char* buffer = new char[header_size];
         file.seek(header_pos);
-        file.read(buffer, header_size);
-        BitReader reader(buffer, header_size);
+        QByteArray header = file.read(header_size);
+        BitReader reader(header.data(), header_size);
         for (uint i = 0; i < max_file_count; ++i)
         {
             FileInfo info;
-            reader.getUInt32();//time
-            reader.getUInt32();//time
-            info.checksum = reader.getUInt32();//checksum
+            reader.getUInt32(); //time
+            reader.getUInt32(); //time
+            info.checksum = reader.getUInt32();
             info.offset = reader.getUInt32();
-            info.size = reader.getUInt32();//size
+            info.size = reader.getUInt32();
             char c;
             while ( (c = reader.getChar()) )
                 info.name += c;
@@ -223,13 +216,11 @@ bool Th06Loader::open(const QString &path)
         FileInfo info;
         info.offset = header_pos;
         info_list << info;
-        delete [] buffer;
         for (int i = 0; i < info_list.size() - 1; ++i)
         {
             FileInfo info = info_list.at(i);
             if (!info.name.endsWith(".pos"))
                 continue;
-            qDebug() << info.name;
             uint csize = info_list.at(i + 1).offset - info.offset;
             file.seek(info.offset);
             QByteArray cdata(file.read(csize));
@@ -237,7 +228,7 @@ bool Th06Loader::open(const QString &path)
             int checksum = decompress(cdata, ddata);
             if (checksum != info.checksum)
             {
-                qDebug("file %s: checksum error!", info.name);
+                qDebug() << QString("file %1: checksum error!").arg(info.name);
             }
             else
             {
@@ -245,7 +236,6 @@ bool Th06Loader::open(const QString &path)
             }
         }
     }
-    //QMessageBox::information(NULL, "", "");
 
     for (int i = 0; i < SongDataSize; ++i)
     {
@@ -267,20 +257,27 @@ MusicData Th06Loader::at(uint index)
     bool loop = true;
     uint loopStart = getUInt32(d);
     uint loopEnd = getUInt32(d + 4);
-    qDebug() << loopStart << loopEnd;
 
     QFile file(dir.absoluteFilePath(WavName.arg(index + 1, 2, 10, QLatin1Char('0'))));
-    file.open(QIODevice::ReadOnly);
 
     return MusicData(
-        file.readAll(),
         ".wav",
         SongData[index],
         Title,
+        file.size(),
         loop,
-        loopStart * 0.02267573696145124716553287982 + 0.5,
-        loopEnd * 0.02267573696145124716553287982 + 0.5
+        loopStart,
+        loopEnd
     );
+}
+
+QByteArray Th06Loader::content(uint index)
+{
+    Q_ASSERT(0 <= index && index < SongDataSize);
+    QFile file(dir.absoluteFilePath(WavName.arg(index + 1, 2, 10, QLatin1Char('0'))));
+    file.open(QIODevice::ReadOnly);
+
+    return file.readAll();
 }
 
 void Th06Loader::close()

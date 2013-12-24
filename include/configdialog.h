@@ -24,14 +24,12 @@
 #include <QDialogButtonBox>
 #include <QtDebug>
 
-#include "loaderinterface.h"
-
 class ConfigDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    ConfigDialog(const QList<LoaderInterface*>& loaders, QWidget *parent = 0);
+    ConfigDialog(const QList<QString>& plugin_title, QWidget *parent = 0);
     ~ConfigDialog() {}
 
     QSize sizeHint() const {
@@ -50,7 +48,8 @@ private:
 
     QGridLayout* dirLayout;
     QDialogButtonBox* buttonBox;
-    const QList<LoaderInterface*>& loaders;
+    const QList<QString> plugin_title;
+    int count;
 };
 
 #endif //CONFIGDIALOG_H

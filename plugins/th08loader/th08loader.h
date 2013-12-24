@@ -14,23 +14,43 @@
  * You should have received a copy of the GNU General Public License
  * along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LOADERINTERFACE_H
-#define LOADERINTERFACE_H
-#include <QtPlugin>
+#ifndef TH06LOADER_H
+#define TH06LOADER_H
+#include <QObject>
+#include <QString>
+#include <QList>
+#include <QHash>
+#include <QDir>
 #include <QByteArray>
-#include "musicdata.h"
+#include "loaderinterface.h"
 
-class LoaderInterface
+struct FileInfo
 {
-    public:
-        virtual ~LoaderInterface() {}
-        virtual const QString& title() const = 0;
-        virtual bool open(const QString &) = 0;
-        virtual void close() = 0;
-        virtual MusicData at(uint index) = 0;
-        virtual QByteArray content(uint index) = 0;
-        virtual uint size() const = 0;
+    uint offset;
+    uint loopStart;
+    uint loopEnd;
+    uint checksum;
+    quint64 size;
+    QString name;
+    QByteArray header;
 };
-Q_DECLARE_INTERFACE(LoaderInterface, "org.BestSteve.touhoumusicplayer.LoaderInterface/1.0")
 
-#endif // LOADERINTERFACE_H
+class Th08Loader : public QObject, public LoaderInterface
+{
+    Q_OBJECT
+    Q_INTERFACES(LoaderInterface)
+
+    public:
+        Th08Loader() {}
+        const QString& title() const;
+        bool open(const QString &);
+        void close();
+        MusicData at(uint index);
+        QByteArray content(uint index);
+        uint size() const;
+    private:
+        QHash<QString, FileInfo> info_hash;
+        QDir dir;
+};
+
+#endif //TH06LOADER_H

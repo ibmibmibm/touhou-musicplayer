@@ -18,17 +18,21 @@ DESTDIR       = ../
 CONFIG       += debug_and_release
 QT           += phonon
 INCLUDEPATH  += ../include
-HEADERS      += ../include/mainwindow.h ../include/musicfile.h ../include/musicdata.h ../include/loaderinterface.h ../include/configdialog.h
-SOURCES      += main.cpp mainwindow.cpp configdialog.cpp
+HEADERS      += ../include/mainwindow.h \
+                ../include/configdialog.h \
+                ../include/pluginloader.h \
+                ../include/musicplayer.h \
+                ../include/musicfile.h \
+                ../include/musicdata.h \
+                ../include/loaderinterface.h
+SOURCES      += main.cpp \
+                mainwindow.cpp \
+                pluginloader.cpp \
+                musicplayer.cpp \
+                configdialog.cpp
 TRANSLATIONS += ../touhou_musicplayer_zh_TW.ts
 
 unix {
-    CONFIG += link_pkgconfig
+    CONFIG    += link_pkgconfig
     PKGCONFIG += portaudiocpp
 }
-
-#win32 {
-    #debug {
-        #CONFIG += console
-    #}
-#}

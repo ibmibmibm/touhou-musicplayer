@@ -19,5 +19,5 @@ QT           += phonon
 INCLUDEPATH  += ../../include
 DESTDIR       = ../
 
-HEADERS      += ../../include/loaderinterface.h th06loader.h
+HEADERS      += ../../include/loaderinterface.h ../../include/musicdata.h th06loader.h
 SOURCES      += th06loader.cpp

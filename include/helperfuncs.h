@@ -17,73 +17,46 @@
 #ifndef HELPERFUNCS_H
 #define HELPERFUNCS_H
 
-#include <Q_INT8>
-#include <Q_INT16>
-#include <Q_INT32>
-#include <Q_INT64>
+#include <QtEndian>
 
 inline quint8 getUInt8(const char *cursor)
 {
-    quint8 u = *reinterpret_cast<const quint8*>(cursor);
-    return u;
+    return *cursor;
 }
 
 inline quint16 getUInt16(const char *cursor)
 {
-#if Q_BYTE_ORDER == Q_BIG_ENDIAN
-    const unsigned char * c = reinterpret_cast<const unsigned char*>(cursor);
-    quint16 u = c[1];
-    u <<= 8;
-    u += c[0];
-    return u;
-#else
-    quint16 u = *reinterpret_cast<const quint16*>(cursor);
-    return u;
-#endif
+    return qFromLittleEndian<qint16>(reinterpret_cast<const uchar*>(cursor));
 }
 
 inline quint32 getUInt32(const char *cursor)
 {
-#if Q_BYTE_ORDER == Q_BIG_ENDIAN
-    const unsigned char * c = reinterpret_cast<const unsigned char*>(cursor);
-    quint32 u = c[3];
-    u <<= 8;
-    u += c[2];
-    u <<= 8;
-    u += c[1];
-    u <<= 8;
-    u += c[0];
-    return u;
-#else
-    quint32 u = *reinterpret_cast<const quint32*>(cursor);
-    return u;
-#endif
+    return qFromLittleEndian<qint32>(reinterpret_cast<const uchar*>(cursor));
 }
 
 inline quint64 getUInt64(const char *cursor)
 {
-#if Q_BYTE_ORDER == Q_BIG_ENDIAN
-    const unsigned char * c = reinterpret_cast<const unsigned char*>(cursor);
-    quint64 u = c[7];
-    u <<= 8;
-    u += c[6];
-    u <<= 8;
-    u += c[5];
-    u <<= 8;
-    u += c[4];
-    u <<= 8;
-    u += c[3];
-    u <<= 8;
-    u += c[2];
-    u <<= 8;
-    u += c[1];
-    u <<= 8;
-    u += c[0];
-    return u;
-#else
-    quint64 u = *reinterpret_cast<const quint64*>(cursor);
-    return u;
-#endif
+    return qFromLittleEndian<qint64>(reinterpret_cast<const uchar*>(cursor));
+}
+
+inline void setUInt8(quint8 value, char *cursor)
+{
+    *cursor = value;
+}
+
+inline void setUInt16(quint16 value, char *cursor)
+{
+    qToLittleEndian<qint16>(value, reinterpret_cast<uchar*>(cursor));
+}
+
+inline void setUInt32(quint32 value, char *cursor)
+{
+    qToLittleEndian<qint32>(value, reinterpret_cast<uchar*>(cursor));
+}
+
+inline void setUInt64(quint64 value, char *cursor)
+{
+    qToLittleEndian<qint64>(value, reinterpret_cast<uchar*>(cursor));
 }
 
 #endif // HELPERFUNCS_H

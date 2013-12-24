@@ -12,10 +12,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Touhou Music Player.  If not, see <http://www.gnu.org/licenses/>.
-TEMPLATE      = subdirs
+TEMPLATE      = lib
+CONFIG       += plugin
 CONFIG       += debug_and_release
-SUBDIRS       = th06loader \
-                th07loader \
-                th08loader \
-                th09loader \
-                th105loader
+QT           += phonon
+INCLUDEPATH  += ../../include
+DESTDIR       = ../
+
+HEADERS      += ../../include/loaderinterface.h ../../include/musicdata.h th08loader.h
+SOURCES      += th08loader.cpp

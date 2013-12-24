@@ -24,9 +24,10 @@
 #include <QPushButton>
 #include "configdialog.h"
 
-ConfigDialog::ConfigDialog(const QList<LoaderInterface*>& _loaders, QWidget *parent) :
+ConfigDialog::ConfigDialog(const QList<QString>& _plugin_title, QWidget *parent) :
     QDialog(parent),
-    loaders(_loaders)
+    plugin_title(_plugin_title),
+    count(plugin_title.size())
 {
     setupUi();
 }
@@ -52,7 +53,7 @@ void ConfigDialog::chooseDir(int i)
 
 void ConfigDialog::accept()
 {
-    for (int i = 0; i < loaders.size(); ++i)
+    for (int i = 0; i < count; ++i)
     {
         QLineEdit* lineEdit = qobject_cast<QLineEdit *>(dirLayout->itemAtPosition(i + 1, 1)->widget());
         if (lineEdit->text().size() && !QDir(lineEdit->text()).exists())
@@ -81,15 +82,13 @@ void ConfigDialog::setupUi()
     }
 
     QSignalMapper *signalMapper = new QSignalMapper(this);
-    for (int i = 0; i < loaders.size(); ++i)
+    for (int i = 0; i < count; ++i)
     {
-        const LoaderInterface* loader = loaders.at(i);
-
         QPushButton *fileButton = new QPushButton(style()->standardIcon(QStyle::SP_DirOpenIcon), "");
         connect(fileButton, SIGNAL(clicked()), signalMapper, SLOT(map()));
         signalMapper->setMapping(fileButton, i);
 
-        dirLayout->addWidget(new QLabel(loader->title()), i + 1, 0);
+        dirLayout->addWidget(new QLabel(plugin_title.at(i)), i + 1, 0);
         dirLayout->addWidget(new QLineEdit(), i + 1, 1);
         dirLayout->addWidget(fileButton, i + 1, 2);
     }

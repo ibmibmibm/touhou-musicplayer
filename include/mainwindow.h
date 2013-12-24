@@ -18,12 +18,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <phonon/phononnamespace.h>
-#include <phonon/audiooutput.h>
-#include <phonon/seekslider.h>
-#include <phonon/mediaobject.h>
-#include <phonon/volumeslider.h>
-#include <phonon/backendcapabilities.h>
 #include <QHash>
 #include <QList>
 #include <QAction>
@@ -33,70 +27,71 @@
 #include <QSpinBox>
 #include <QLabel>
 
-#include "musicfile.h"
-#include "loaderinterface.h"
+#include "pluginloader.h"
+#include "musicplayer.h"
 #include "configdialog.h"
+#include "musicfile.h"
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-public:
-    MainWindow();
-    ~MainWindow();
+    public:
+        MainWindow();
+        ~MainWindow();
 
-    QSize sizeHint() const {
-        return QSize(800, 600);
-    }
+        QSize sizeHint() const {
+            return QSize(800, 600);
+        }
 
-protected:
-    void closeEvent(QCloseEvent *event);
-	
-private slots:
-    void loadFile();
-    void config();
-    void about();
-    void stateChanged(Phonon::State newState, Phonon::State oldState);
-    void tick(qint64 time);
-    void sourceChanged(const Phonon::MediaSource &source);
-    void aboutToFinish();
-    void musicChanged(int row, int = 0);
-    void next();
-    void previous();
-    void insertMusic(const MusicFile& music);
+    protected:
+        void closeEvent(QCloseEvent *event);
+ 
+    private slots:
+        void loadFile();
+        void config();
+        void about();
+        void next();
+        void previous();
+        void loadProgress(int);
+        void stateChanged(MusicPlayerState newState, MusicPlayerState oldState);
+        void totalSamplesChanged(int newTotalSamples);
+        void remainLoopChanged(int newRemainLoop);
+        void tick(int sample);
+        void currentMusicChanged(const MusicFile& file);
+        void aboutToFinish();
+        void musicChanged(int row, int = 0);
 
-private:
-    int getNewId(int offset);
-    void setupActions();
-    void setupMenus();
-    void setupUi();
-    void setupPlugins();
+    private:
+        void insertMusic(const MusicFile& music);
+        int getNewId(int offset);
+        void setupActions();
+        void setupMenus();
+        void setupUi();
 
-    Phonon::SeekSlider *seekSlider;
-    Phonon::MediaObject *mediaObject;
-    Phonon::AudioOutput *audioOutput;
-    Phonon::VolumeSlider *volumeSlider;
-    QLabel *titleLabel;
-    QTableWidget *musicTable;
-    QList<LoaderInterface*> loaders;
-    QHash<QString, int> loaders_map;
-    QList<MusicFile> musics;
-    int currentIndex;
-    int nextIndex;
-    int currentLoop;
+        QSlider *seekSlider;
+        QSlider *volumeSlider;
+        QLabel *titleLabel;
+        QTableWidget *musicTable;
+        QList<MusicFile> musics;
+        int currentIndex;
 
-    QAction *playAction;
-    QAction *pauseAction;
-    QAction *stopAction;
-    QAction *nextAction;
-    QAction *previousAction;
-    QAction *loadFileAction;
-    QAction *exitAction;
-    QAction *configAction;
-    QAction *aboutAction;
-    QAction *aboutQtAction;
-    QLCDNumber *timeLcd;
-    ConfigDialog *configDialog;
+        PluginLoader *pluginLoader;
+        MusicPlayer *musicPlayer;
+        QString loadingTitle;
+
+        QAction *playAction;
+        QAction *pauseAction;
+        QAction *stopAction;
+        QAction *nextAction;
+        QAction *previousAction;
+        QAction *loadFileAction;
+        QAction *exitAction;
+        QAction *configAction;
+        QAction *aboutAction;
+        QAction *aboutQtAction;
+        QLCDNumber *timeLcd;
+        ConfigDialog *configDialog;
 };
 
 #endif //MAINWINDOW_H
